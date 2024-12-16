@@ -1,0 +1,27 @@
+#!/bin/bash
+
+exe_dir=@CMAKE_BINARY_DIR@/bin
+plume_config=@DATA_PATH@/plume-config.yml
+
+echo "Run extreme event detection plugin with emulator :"
+echo "Setting up environment variables..."
+export CLASS="d1"
+export TYPE="fc"
+export EXPVER="0001"
+export DATE=$(date +%Y%m%d)
+export TIME="0000"
+
+# Check if --dev flag is passed as an argument
+if [[ " $@ " == *" --dev "* ]]; then
+    # If --dev is found, the ee plugin will not actually send an aviso notificaiton
+    # but only print the url, if enabled
+    # Otherwise, run the full detection including notification if enabled
+    export PLUME_PLUGIN_DEV=1
+else
+    export PLUME_PLUGIN_DEV=0
+fi
+
+mpirun -np 2 $exe_dir/emulate_ee_detection.x $plume_config
+
+echo "Tearing down environment variables..."
+unset CLASS TYPE EXPVER DATE TIME PLUME_PLUGIN_DEV

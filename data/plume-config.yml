@@ -1,0 +1,46 @@
+{
+    "plugins": [
+        {
+            "name": "EEPlugin",
+            "lib": "extreme_event_plugin",
+            "enabled": true,
+            "core-config": {
+                "aviso_url": "https://geoaviso-dev.lumi.apps.dte.destination-earth.eu",
+                "notify_endpoint": "/notify/mars",
+                "enable_notification": true,
+                "healpix_res": 2,
+                "events": [
+                    {
+                        "name": "extreme_wind",
+                        "enabled": true,
+                        "required_params": ["100u","100v"],
+                        "instances": [
+                            {
+                                "lower_bound": 25.0,
+                                "upper_bound": 0.0,
+                                "description": "Extremely strong wind"
+                            },
+                            {
+                                "lower_bound": 0.0,
+                                "upper_bound": 5.0,
+                                "description": "Extremely low wind"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "extreme_wave",
+                        "enabled": false,
+                        "required_params": [],
+                        "instances": [
+                            {
+                                "lower_bound": 25.0,
+                                "upper_bound": 0.0,
+                                "description": "Extremely high waves"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
