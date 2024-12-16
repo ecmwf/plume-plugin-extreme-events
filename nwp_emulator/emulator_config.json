@@ -1,0 +1,78 @@
+{
+    "n_steps": 100,
+    "grids": [
+        {
+            "name": "grid1",
+            "n_lat": 10,
+            "n_lon": 20,
+            "type": "O400"
+        },
+        {
+            "name": "grid2",
+            "n_lat": 10,
+            "n_lon": 20,
+            "type": "L"
+        }
+    ],
+    "functions": {
+        "f1": {
+            "type": "random",
+            "limits": [0, 1]
+        },
+        "f2": {
+            "type": "step",
+            "area": [-10,170,10,190],
+            "limits": [0, 1],
+            "time_variation": 2.2
+        },
+        "vortex_roll": {
+            "time_variation": 1.1
+        }
+    },
+    "parameters": {
+        "step": {
+            "type": "int",
+            "initial_value": 0
+        }
+    },
+    "fields": {
+        "100u": {
+            "type": "double",
+            "vertical_levels": 1,
+            "apply":{
+                "operator": "add",
+                "functions": [
+                    {
+                        "function": "f1",
+                        "limits": [0, 22.33],
+                        "area": [-11, 177, 11, 199]
+                    },
+                    {
+                        "function": "f2",
+                        "limits": [0, 22.33],
+                        "area": [-11, 177, 11, 199]
+                    }
+                ]
+            }
+        },
+        "t": {
+            "type": "double",
+            "vertical_levels": 137,
+            "apply":{
+                "operator": "max",
+                "functions": [
+                    {
+                        "function": "f1",
+                        "limits": [0, 22.33],
+                        "area": [-11, 177, 11, 199]
+                    },
+                    {
+                        "function": "f2",
+                        "limits": [0, 22.33],
+                        "area": [-11, 177, 11, 199]
+                    }
+                ]
+            }
+        }
+    }
+}
