@@ -23,6 +23,5 @@ CASE("test construction") {
 } // namespace test
 
 int main(int argc, char **argv) {
-  atlas::initialize(argc,argv);
   return run_tests(argc, argv);
 }

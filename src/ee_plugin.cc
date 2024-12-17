@@ -8,8 +8,6 @@ using namespace HEALPixUtils;
 
 namespace ExtremeEventPlugin {
 
-static plume::PluginCoreBuilder<EEPluginCore> EEPluginCoreBuilder;
-
 EEPluginCore::EEPluginCore(const eckit::Configuration &conf)
     : PluginCore(conf) {
   healpixRes = conf.getInt("healpix_res");
@@ -79,7 +77,6 @@ void EEPluginCore::setHEALPixMapping() {
 // ------------------------------------------------------
 
 // ------------------------------------------------------
-REGISTER_LIBRARY(EEPlugin)
 
 EEPlugin::EEPlugin() : Plugin("EEPlugin"){};
 

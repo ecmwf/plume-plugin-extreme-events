@@ -24,6 +24,7 @@ set(EE_PLUGIN_FILES_CC
     notification.cc
     healpix_utils.cc
     ee_plugin.cc
+    ee_plugin_registration.cc
     ee_registry/ee_registry.cc
     ee_registry/extreme_wind.cc
 )
