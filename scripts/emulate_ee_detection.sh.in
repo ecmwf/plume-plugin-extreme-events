@@ -1,0 +1,80 @@
+#!/bin/bash
+# 
+#  (C) Copyright 2025- ECMWF.
+# 
+#  This software is licensed under the terms of the Apache Licence Version 2.0
+#  which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+# 
+#  In applying this licence, ECMWF does not waive the privileges and immunities
+#  granted to it by virtue of its status as an intergovernmental organisation nor
+#  does it submit to any jurisdiction.
+# 
+
+exe_dir=@CMAKE_BINARY_DIR@/bin
+plume_config=""
+emulator_src=""
+njobs=1
+expver="0000"
+dev=0
+
+echo "Run extreme event detection plugin with emulator :"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --plume-cfg=*)
+            plume_config="$1"
+            shift
+            ;;
+        --expver=*)
+            expver=$(echo "$1" | sed 's/^[^=]*=//')
+            shift
+            ;;
+        --np=*)
+            njobs=$(echo "$1" | sed 's/^[^=]*=//')
+            shift
+            ;;
+        --dev)
+            dev=1
+            shift
+            ;;
+        --grib-src=*|--config-src=*)
+            if [[ -n "$emulator_src" ]]; then
+                echo "Error: Both --grib-src and --config-src cannot be provided at the same time."
+                exit 1
+            fi
+            emulator_src="$1"
+            shift
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
+
+    esac
+done
+
+echo "Setting up environment variables..."
+export CLASS="d1"
+export TYPE="fc"
+export EXPVER=$expver
+export DATE=$(date +%Y%m%d)
+export TIME="0000"
+# If --dev is found, the ee plugin will not actually send an aviso notificaiton
+# but only print the url, if enabled
+# Otherwise, run the full detection including notification if enabled
+export PLUME_PLUGIN_DEV=$dev
+
+# Run with config OR grib source
+if [[ -z "$emulator_src" ]]; then
+    echo "Provide either of these options: [--grib-src=<path> | --config-src=<path>]"
+    exit 1
+fi
+if [[ -z "$plume_config" ]]; then
+    echo "--plume-cfg=<path> is missing from the command"
+    exit 1
+fi
+
+mpirun -np $njobs $exe_dir/nwp_emulator_run.x $emulator_src $plume_config
+
+echo "Tearing down environment variables..."
+unset CLASS TYPE EXPVER DATE TIME PLUME_PLUGIN_DEV

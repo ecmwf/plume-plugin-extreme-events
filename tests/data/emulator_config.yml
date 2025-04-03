@@ -1,0 +1,27 @@
+emulator:
+  n_steps: 2
+  grid_identifier: "N80"
+  vertical_levels: 5
+  fields:
+    100u:
+      levtype: "sfc"
+      apply:
+        vortex_rollup:
+          time_variation: 1.1
+    100v:
+      levtype: "sfc"
+      apply:
+        vortex_rollup:
+          time_variation: 1.1
+    u:
+      apply:
+        levels:
+          "1":
+            step:
+              area: [71.5, -25, 34.5, 45] # rectangle represented by NW and SE (lat,lon) coordinates
+              value: 30.0
+          "2":
+            step:
+              area: [-10, 113, -43.7, 155.3]
+              value: 30.0
+    v: "u"

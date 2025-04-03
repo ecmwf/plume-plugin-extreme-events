@@ -1,0 +1,30 @@
+plugins:
+  - name: "EEPlugin"
+    lib: "extreme_event_plugin"
+    parameters:
+      - &extreme_wind
+        - name: "u"
+          type: "atlas_field"
+        - name: "v"
+          type: "atlas_field"
+        - name: "100u"
+          type: "atlas_field"
+        - name: "100v"
+          type: "atlas_field"
+    core-config:
+        aviso_url: "test"
+        notify_endpoint: "/test"
+        enable_notification: true
+        healpix_res: 32
+        events:
+          - name: "extreme_wind"
+            enabled: true
+            required_params: *extreme_wind
+            instances:
+              - lower_bound: 25.0
+                upper_bound: 0.0
+                model_levels: [1, 2]
+                description: "Extremely strong wind"
+              - lower_bound: 0.0
+                upper_bound: 0.5
+                description: "No wind"
