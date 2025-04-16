@@ -1,0 +1,11 @@
+dependencies: |
+  ecmwf/ecbuild
+  ecmwf/eckit
+  ecmwf/fckit
+  ecmwf/atlas
+  ecmwf/eccodes
+  ecmwf/plume
+dependency_cmake_options: |
+  ecmwf/atlas: "-DENABLE_FORTRAN=ON"
+dependency_branch: develop
+parallelism_factor: 8
