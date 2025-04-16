@@ -47,6 +47,8 @@ ecbuild_add_test(
                 DATE="00000000"
                 TIME="0000"
                 PLUME_PLUGIN_DEV=1
+                DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib:$ENV{DYLD_LIBRARY_PATH}
+                LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib:$ENV{LD_LIBRARY_PATH}
     ARGS --config-src=${CMAKE_CURRENT_SOURCE_DIR}/data/emulator_config.yml
          --plume-cfg=${CMAKE_CURRENT_SOURCE_DIR}/data/plume_config.yml
 )
