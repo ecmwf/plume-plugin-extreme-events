@@ -32,6 +32,7 @@ set(EE_PLUGIN_FILES_H
     ee_registry/ee_base.h
     ee_registry/ee_registry.h
     ee_registry/extreme_wind.h
+    ee_registry/storm.h
     plugin_types.h
 )
 
@@ -42,6 +43,7 @@ set(EE_PLUGIN_FILES_CC
     ee_plugin_registration.cc
     ee_registry/ee_registry.cc
     ee_registry/extreme_wind.cc
+    ee_registry/storm.cc
 )
 
 set(EE_PLUGIN_SOURCES

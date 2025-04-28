@@ -87,19 +87,14 @@ void mapLonLatToHEALPixCell(int resolution, const atlas::FunctionSpace& modelFS,
     }
 }
 
-std::vector<std::vector<atlas::PointLonLat>> cellToPolygons(std::vector<int>& eeIndices, std::vector<int>& mapping,
+std::vector<std::vector<atlas::PointLonLat>> cellToPolygons(std::set<int>& eeCells,
                                                             std::vector<std::vector<atlas::PointLonLat>>& vertices) {
     std::vector<std::vector<atlas::PointLonLat>> ee_polygons;
-    // 1. Find HealPix cells from EE points indices
-    std::set<int> ee_cells;
-    for (const int& point_idx : eeIndices) {
-        ee_cells.insert(mapping[point_idx]);
-    }
-    // 2. separate contiguous events and remove inner vertices
+    // Separate contiguous events and remove inner vertices
     // TODO: edge case: a region with holes has been detected
     // currently will end up with two separate events: hole and borders
     std::map<std::pair<atlas::PointLonLat, atlas::PointLonLat>, int> count_edges;
-    for (const int& cell_idx : ee_cells) {
+    for (const int& cell_idx : eeCells) {
         for (size_t vidx = 0; vidx < vertices[cell_idx].size(); ++vidx) {
             // Add all cell edges, handles quads and pents pole elements
             std::pair<atlas::PointLonLat, atlas::PointLonLat> ee_edge = {
