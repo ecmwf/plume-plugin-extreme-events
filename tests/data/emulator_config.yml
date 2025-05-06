@@ -6,8 +6,9 @@ emulator:
     100u:
       levtype: "sfc"
       apply:
-        vortex_rollup:
-          time_variation: 1.1
+        step:
+          value: 10.0
+          variation: -2.5
     100v:
       levtype: "sfc"
       apply:
@@ -15,18 +16,27 @@ emulator:
           time_variation: 1.1
         step:
           area: [71.5, -25, 34.5, 45]
-          value: 21.0
+          value: 30.0
+          variation: -7.5
     u:
       apply:
         levels:
           "1":
+            random:
+              min: 1.0
+              max: 5.0
             step:
               area: [71.5, -25, 34.5, 45] # rectangle represented by NW and SE (lat,lon) coordinates
-              value: 30.0
+              value: 0.0
+              variation: 0.12
           "2":
+            random:
+              min: 1.0
+              max: 5.0
             step:
               area: [-10, 113, -43.7, 155.3]
-              value: 30.0
+              value: 0.0
+              variation: 0.12
     v: "u"
     swh:
       levtype: "sfc"

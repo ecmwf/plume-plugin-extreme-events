@@ -8,9 +8,10 @@ extreme event plugin configuration. Anchors can be used to avoid errors and dupl
 The `enabled` key is optional, it can be set to `false` to keep an event in the configuration but not run it in the plugin.
 This key is `true` by default if omitted.
 
-[Extreme wind](#extreme-wind)
-[Storm](#storm)
+- [Extreme wind](#extreme-wind)
+- [Storm](#storm)
 - [Extreme wave](#extreme-wave)
+- [Wind drought](#wind-drought)
 
 ## Extreme wind
 
@@ -154,4 +155,39 @@ instances:
     description: "Storm conditions"
   - threshold: 3.5
     description: "Unsafe offshore wind-farm operations"
+```
+
+## Wind drought
+
+### Description
+
+This event with name `wind_drought` corresponds to prolonged periods of no wind which can constitute an extreme event
+from the electricity grid perspective, especially if combined with important cloud cover.
+
+It stores for each grid point the number of time steps where the wind stayed below a given threshold. The counters
+reset whenever the wind (spatial average over the coarse cell) exceeds the threshold.
+
+> [!NOTE]
+> The initial implementation of this event makes use of the `100u` and `100v` fields from GRIB 1.
+It will be migrated to GRIB 2 to use `u` and `v` at height level `100` in the future.
+
+### Configuration examples
+
+Only `100u` and `100v` fields are allowed at the moment. The event requires only two options:
+- The wind speed threshold: expressed in m/s.
+- The time window: expressed in minutes. The typical order of magnitude for the time window for this event is hours or
+  days, but they must be converted to minutes.
+
+```yaml
+parameters:
+  - &wind_drought
+    - name: "100u"
+      type: "atlas_field"
+    - name: "100v"
+      type: "atlas_field"
+...
+name: "wind_drought"
+required_params: *wind_drought
+wind_speed_cutout: 2.0
+time_window: 1440
 ```
