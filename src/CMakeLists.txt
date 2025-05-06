@@ -34,6 +34,7 @@ set(EE_PLUGIN_FILES_H
     ee_registry/extreme_wind.h
     ee_registry/storm.h
     ee_registry/extreme_wave.h
+    ee_registry/wind_drought.h
     plugin_types.h
 )
 
@@ -46,6 +47,7 @@ set(EE_PLUGIN_FILES_CC
     ee_registry/extreme_wind.cc
     ee_registry/storm.cc
     ee_registry/extreme_wave.cc
+    ee_registry/wind_drought.cc
 )
 
 set(EE_PLUGIN_SOURCES
