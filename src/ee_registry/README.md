@@ -88,7 +88,7 @@ the extreme wind event will determine which instance should run on which fields.
 
 This event with name `storm` uses a minimal definition solely based on 100m wind components to serve as baseline,
 but may be refined in the future. Detection is triggered when the wind (spatial average over the coarsening defined by
-the plugin) exceeds a given threshold over a specified time window.
+the plugin) exceeds a given threshold over a specified time window. TODO: Update def with final choice.
 
 This event stores the average value of the wind for each coarse cell and each time step in the time window.
 

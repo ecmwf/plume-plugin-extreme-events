@@ -24,19 +24,7 @@ const std::string Storm::type_ = "storm";
 
 Storm::Storm(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
              const std::vector<int>& coarseMapping) :
-    ExtremeEvent(config, type_), coarseMapping_(coarseMapping), cellMapping_([&coarseMapping] {
-        // This map represents only the coarse cells owned by the partition, not the global coarsening
-        std::unordered_map<int, int> gridPointsPerCell;
-        for (const auto& cell : coarseMapping) {
-            ++gridPointsPerCell[cell];
-        }
-        std::vector<std::pair<int, int>> cellMapping;
-        cellMapping.reserve(gridPointsPerCell.size());
-        for (const auto& [cell, points] : gridPointsPerCell) {
-            cellMapping.emplace_back(cell, points);
-        }
-        return cellMapping;
-    }()) {
+    ExtremeEvent(config, type_), coarseMapping_(coarseMapping) {
     std::sort(requiredFields_.begin(), requiredFields_.end());
     /** @todo 100u and 100v will not exist after the GRIB2 migration, the event will need a refactor with an updated
      *        Plume interface to access levtype 'hl' and level '100', or it can use the levtype 'ml' and compute the
@@ -46,15 +34,14 @@ Storm::Storm(const eckit::LocalConfiguration& config, plume::data::ModelData& mo
         throw eckit::BadValue("Storm requires 100m wind component fields.", Here());
     }
     double windSpeedCutout = config.getDouble("wind_speed_cutout");
-    if (windSpeedCutout < 0 || windSpeedCutout > std::numeric_limits<uint16_t>::max()) {
-        throw eckit::BadValue("The cutout wind speed for the storm event should be between 0 and " + std::to_string(std::numeric_limits<uint16_t>::max()), Here());
+    if (windSpeedCutout < 0 || windSpeedCutout > (std::numeric_limits<uint16_t>::max() / 100)) {
+        throw eckit::BadValue("The cutout wind speed for the storm event should be between 0 and " + std::to_string(std::numeric_limits<uint16_t>::max() / 100), Here());
     }
 
-    nCells_          = cellMapping_.size();
     windSpeedCutout_ = static_cast<uint16_t>(std::round(windSpeedCutout * 100));
     timeWindow_      = config.getUnsigned("time_window");
     ntimeSteps_      = std::ceil(timeWindow_ * 60 / modelData.getDouble("TSTEP"));
-    avgWindSpeeds_   = std::make_unique<uint16_t[]>(ntimeSteps_ * nCells_);
+    windSpeeds_      = std::deque<uint16_t>(ntimeSteps_ * coarseMapping_.size(), 0);
     description_     = "Storm (100m wind speed average over " + config.getString("time_window") + "min exceeding " +
                    config.getString("wind_speed_cutout") + "m/s)";
 }
@@ -63,38 +50,40 @@ std::vector<ExtremeEvent::DetectionData> Storm::detect(plume::data::ModelData& m
     std::vector<DetectionData> ee_points;
     auto fieldU = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getAtlasFieldShared("100u"));
     auto fieldV = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getAtlasFieldShared("100v"));
-    // 1. Slide the wind speeds window and compute current time step wind speed averages
-    std::memmove(avgWindSpeeds_.get() + nCells_, avgWindSpeeds_.get(),
-                 (ntimeSteps_ - 1) * nCells_ * sizeof(uint16_t));
-    // Compute cell spatial average cumulatively
-    std::vector<FIELD_TYPE_REAL> tmpAvgs(nCells_);
-    for (atlas::idx_t idx = 0; idx < coarseMapping_.size(); idx++) {
+    // 1. Slide the wind speeds window with current time step values
+    windSpeeds_.erase(windSpeeds_.begin() + (ntimeSteps_ - 1) * coarseMapping_.size(), windSpeeds_.end());
+    // reverse inserting element to maintain indices
+    for (atlas::idx_t idx = coarseMapping_.size() - 1; idx >= 0; idx--) {
         FIELD_TYPE_REAL windMagnitude = std::sqrt(fieldU(idx, 0) * fieldU(idx, 0) + fieldV(idx, 0) * fieldV(idx, 0));
-        int cell                      = coarseMapping_[idx];
-        auto coarseCellIt             = std::find_if(cellMapping_.begin(), cellMapping_.end(),
-                                                     [cell](const std::pair<int, int>& p) { return p.first == cell; });
-        size_t coarseCellIdx          = std::distance(cellMapping_.begin(), coarseCellIt);
-        tmpAvgs[coarseCellIdx] += windMagnitude / cellMapping_[coarseCellIdx].second;
+        windSpeeds_.push_front(static_cast<uint16_t>(std::round(windMagnitude * 100.0)));
     }
-    std::transform(tmpAvgs.begin(), tmpAvgs.end(), avgWindSpeeds_.get(),
-                   [](FIELD_TYPE_REAL val) { return static_cast<uint16_t>(std::round(val * 100.0)); });
+    
 
     if (modelData.getInt("NSTEP") < ntimeSteps_) { // Fill the wind speed array but do not run detection yet
         return ee_points;
     }
 
     // 2. Compute temporal average and run detection on the time window
+    std::unordered_map<int, uint32_t> cellMaximums;
+    for (atlas::idx_t idx = 0; idx < coarseMapping_.size(); idx++){
+        uint32_t windAvg = 0;
+        for (size_t tstep = 0; tstep < ntimeSteps_; tstep++) {
+            windAvg += windSpeeds_[tstep * coarseMapping_.size() + idx];
+        }
+        if (cellMaximums.find(coarseMapping_[idx]) == cellMaximums.end()) {
+            cellMaximums[coarseMapping_[idx]] = windAvg;
+        } else {
+            cellMaximums[coarseMapping_[idx]] = std::max(cellMaximums[coarseMapping_[idx]], windAvg);
+        }
+    }
+
     /** @todo Extremes DT output these fields as levtype 'hl' levelist '100', the keys will need an update for
      *        GRIB2 compatibility. Ideally it is fetched from Plume or the field metadata instead of being hardcoded.
      */
     ee_points.push_back({{}, description_, "100u/100v", "sfc", "0"});
-    for (size_t cellIdx = 0; cellIdx < nCells_; cellIdx++) {
-        uint64_t temporalAvg = 0;  // to avoid overflow if we have a lot of time steps to sum
-        for (size_t tstep = 0; tstep < ntimeSteps_; tstep++) {
-            temporalAvg += static_cast<uint64_t>(avgWindSpeeds_[cellIdx + tstep * nCells_]);
-        }
-        if (static_cast<uint16_t>(temporalAvg / ntimeSteps_) >= windSpeedCutout_) {
-            ee_points[0].detectedCells.insert(cellMapping_[cellIdx].first);
+    for (const auto& [cell, max] : cellMaximums) {
+        if (max > windSpeedCutout_ * ntimeSteps_) {
+            ee_points[0].detectedCells.insert(cell);
         }
     }
 
