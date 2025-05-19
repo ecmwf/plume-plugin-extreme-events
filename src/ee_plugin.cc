@@ -9,7 +9,6 @@
  * does it submit to any jurisdiction.
  */
 #include <cmath>
-#include <map>
 #include <sstream>
 
 #include "atlas/field/Field.h"
@@ -103,7 +102,7 @@ std::string EEPluginCore::modelStepStr() {
     }
     int seconds = static_cast<int>(std::round(modelData().getInt("NSTEP") * modelData().getDouble("TSTEP")));
     // Sub-hourly supported time units (except for seconds)
-    std::map<int, std::string> timeUnits = {{86400, "d"}, {3600, "h"}, {60, "m"}};
+    std::vector<std::pair<int, std::string>> timeUnits = {{86400, "d"}, {3600, "h"}, {60, "m"}};
     for (const auto& unit : timeUnits) {
         if (seconds % unit.first == 0) {
             int quotient = seconds / unit.first;
