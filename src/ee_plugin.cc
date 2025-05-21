@@ -9,11 +9,9 @@
  * does it submit to any jurisdiction.
  */
 #include <cmath>
-#include <map>
 #include <sstream>
 
 #include "atlas/field/Field.h"
-#include "atlas/functionspace.h"
 
 #include "ee_plugin.h"
 #include "healpix_utils.h"
@@ -34,6 +32,8 @@ EEPluginCore::EEPluginCore(const eckit::Configuration& conf) : PluginCore(conf) 
 }
 
 void EEPluginCore::setup() {
+    // Healpix - grid points & polygon mapping matrix
+    setHEALPixMapping();
     // initialize extremeEventList from config
     eckit::Log::info() << "Extreme event detection Plume plugin loading events... ";
     for (auto& ee : extremeEventConfig_) {
@@ -49,8 +49,7 @@ void EEPluginCore::setup() {
             }
         }
         if (hasRequiredParams) {
-            ee.set("vertical_levels", modelData().getInt("NFLEVG"));
-            extremeEvents_.push_back(ExtremeEventRegistry::instance().createEvent(ee.getString("name"), ee));
+            extremeEvents_.push_back(ExtremeEventRegistry::instance().createEvent(ee, modelData(), Point2HPcell_));
             eckit::Log::info() << ee.getString("name") << " ";
         }
     }
@@ -58,8 +57,6 @@ void EEPluginCore::setup() {
         eckit::Log::error() << "No extreme events loaded, the EE plugin will error, check configuration" << std::endl;
     }
     eckit::Log::info() << std::endl;
-    // Healpix - grid points & polygon mapping matrix
-    setHEALPixMapping();
 }
 
 void EEPluginCore::run() {
@@ -69,11 +66,11 @@ void EEPluginCore::run() {
         // Run the detection for each extreme event suite
         auto results = ee->detect(modelData());
         for (size_t idx = 0; idx < results.size(); ++idx) {
-            if (results[idx].detectedPoints.empty()) {
+            if (results[idx].detectedCells.empty()) {
                 // No actual points were detected for that instance of the event
                 continue;
             }
-            auto ee_polygon_points = cellToPolygons(results[idx].detectedPoints, Point2HPcell_, HPcell2polygon_);
+            auto ee_polygon_points = cellToPolygons(results[idx].detectedCells, HPcell2polygon_);
             if (enableNotification_) {
                 // Send notification for each polygon individually if enabled
                 for (auto& polygon : ee_polygon_points) {
@@ -82,7 +79,10 @@ void EEPluginCore::run() {
                     payload << "{\"step\":\"" << elapsedTime << "\",\"description\":\"" << results[idx].description
                             << "\",\"param\":\"" << results[idx].param << "\",\"levtype\":\"" << results[idx].levtype
                             << "\",\"levelist\":\"" << results[idx].levelist << "\"}";
-                    notificationHandler_.send(payload.str(), polygon);
+                    int status = notificationHandler_.send(payload.str(), polygon);
+                    if (status != 200 && status != 999) {
+                        eckit::Log::error() << "Could not send Aviso notification, error code " << status << std::endl;
+                    }
                 }
             }
             else {
@@ -94,8 +94,8 @@ void EEPluginCore::run() {
 
 void EEPluginCore::setHEALPixMapping() {
     // TODO: Should this plugin handle multiple functionspaces if fields passed are not all on the same mesh?
-    // Retrieve the function space from the first field found in the first extreme event
-    auto fs = modelData().getAtlasFieldShared(extremeEvents_[0]->requiredFields()[0]).functionspace();
+    // Retrieve the function space from the model data
+    auto fs = modelData().getAtlasFieldShared(modelData().listAvailableParameters("ATLAS_FIELD")[0]).functionspace();
     mapLonLatToHEALPixCell(healpixRes_, fs, Point2HPcell_, HPcell2polygon_);
 }
 
@@ -105,7 +105,7 @@ std::string EEPluginCore::modelStepStr() {
     }
     int seconds = static_cast<int>(std::round(modelData().getInt("NSTEP") * modelData().getDouble("TSTEP")));
     // Sub-hourly supported time units (except for seconds)
-    std::map<int, std::string> timeUnits = {{86400, "d"}, {3600, "h"}, {60, "m"}};
+    std::vector<std::pair<int, std::string>> timeUnits = {{86400, "d"}, {3600, "h"}, {60, "m"}};
     for (const auto& unit : timeUnits) {
         if (seconds % unit.first == 0) {
             int quotient = seconds / unit.first;

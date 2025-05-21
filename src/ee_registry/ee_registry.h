@@ -12,6 +12,7 @@
 #include <string>
 
 #include "eckit/config/LocalConfiguration.h"
+#include "plume/data/ModelData.h"
 
 #include "ee_base.h"
 
@@ -22,11 +23,12 @@
  */
 class ExtremeEventRegistry {
 public:
-    using ExtremeEventFactory = std::function<std::unique_ptr<ExtremeEvent>(const eckit::LocalConfiguration& config)>;
+    using ExtremeEventFactory = std::function<std::unique_ptr<ExtremeEvent>(
+        const eckit::LocalConfiguration& config, plume::data::ModelData&, const std::vector<int>& coarseMapping)>;
 
     void registerEvent(const std::string& eventName, ExtremeEventFactory factory);
-    std::unique_ptr<ExtremeEvent> createEvent(const std::string& eventName,
-                                                        const eckit::LocalConfiguration& config);
+    std::unique_ptr<ExtremeEvent> createEvent(const eckit::LocalConfiguration& config,
+                                              plume::data::ModelData& modelData, const std::vector<int>& coarseMapping);
     static ExtremeEventRegistry& instance();
 
     ExtremeEventRegistry() = default;
@@ -35,7 +37,7 @@ public:
     /// Singletons should not be assignable.
     ExtremeEventRegistry& operator=(const ExtremeEventRegistry&) = delete;
     /// Explicitly delete the moving operations.
-    ExtremeEventRegistry(ExtremeEventRegistry&&) = delete;
+    ExtremeEventRegistry(ExtremeEventRegistry&&)            = delete;
     ExtremeEventRegistry& operator=(ExtremeEventRegistry&&) = delete;
 
 private:

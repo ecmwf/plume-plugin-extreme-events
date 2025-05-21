@@ -41,6 +41,7 @@ private:
     };
 
     std::vector<Interval> intervals_;
+    const std::vector<int>& coarseMapping_;
 
 public:
     /**
@@ -50,10 +51,13 @@ public:
      * the use of either the surface fields {10,100}{u,v} or the leveled fields {u,v}.
      * @warning Detection at given heights when levels are provided is not supported yet.
      *
-     * @param The configuration of the event, mainly consisting of parameters for bounds, description, and height
+     * @param config The configuration of the event, mainly consisting of parameters for bounds, description, and height
      *        for several instances.
+     * @param modelData The model data passed through Plume.
+     * @param coarseMapping The mapping to use to coarsen the detection data.
      */
-    ExtremeWind(const eckit::LocalConfiguration& config);
+    ExtremeWind(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+                const std::vector<int>& coarseMapping);
 
     /**
      * @brief Detects extreme winds at a given time step.
@@ -70,7 +74,10 @@ public:
     static struct Registrar {
         Registrar() {
             ExtremeEventRegistry::instance().registerEvent(
-                type_, [](const eckit::LocalConfiguration& config) { return std::make_unique<ExtremeWind>(config); });
+                type_, [](const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+                          const std::vector<int>& coarseMapping) {
+                    return std::make_unique<ExtremeWind>(config, modelData, coarseMapping);
+                });
         }
     } registrar;
 };
