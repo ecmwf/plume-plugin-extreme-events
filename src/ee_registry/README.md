@@ -10,6 +10,7 @@ This key is `true` by default if omitted.
 
 - [Extreme wind](#extreme-wind)
 - [Storm](#storm)
+- [Wind drought](#wind-drought)
 
 ## Extreme wind
 
@@ -116,4 +117,38 @@ name: "storm"
 required_params: *storm
 wind_speed_cutout: 20.0
 time_window: 60
+```
+
+## Wind drought
+
+### Description
+
+This event with name `wind_drought` corresponds to prolonged periods of no wind which can constitute an extreme event
+from the energy grid perspective, especially if combined with important cloud cover.
+
+It stores for each coarse cell the number of time steps where the wind stayed below a given threshold. The counters
+reset whenever the wind (spatial average over the coarse cell) exceeds the threshold.
+
+The initial implementation of this event makes use of the `100u` and `100v` fields from GRIB 1.
+It will be migrated to GRIB 2 to use `u` and `v` at height level `100` in the future.
+
+### Configuration examples
+
+Only `100u` and `100v` fields are allowed at the moment. The event requires only two options:
+- The wind speed threshold: expressed in m/s.
+- The time window: expressed in minutes. The typical order of magnitude for the time window for this event is hours or
+  days, but they must be converted to minutes.
+
+```yaml
+parameters:
+  - &wind_drought
+    - name: "100u"
+      type: "atlas_field"
+    - name: "100v"
+      type: "atlas_field"
+...
+name: "wind_drought"
+required_params: *wind_drought
+wind_speed_cutout: 2.0
+time_window: 1440
 ```
