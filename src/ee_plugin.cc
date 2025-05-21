@@ -79,7 +79,10 @@ void EEPluginCore::run() {
                     payload << "{\"step\":\"" << elapsedTime << "\",\"description\":\"" << results[idx].description
                             << "\",\"param\":\"" << results[idx].param << "\",\"levtype\":\"" << results[idx].levtype
                             << "\",\"levelist\":\"" << results[idx].levelist << "\"}";
-                    notificationHandler_.send(payload.str(), polygon);
+                    int status = notificationHandler_.send(payload.str(), polygon);
+                    if (status != 200 && status != 999) {
+                        eckit::Log::error() << "Could not send Aviso notification, error code " << status << std::endl;
+                    }
                 }
             }
             else {
