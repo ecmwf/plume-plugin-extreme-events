@@ -99,8 +99,7 @@ It will be migrated to GRIB 2 to use `u` and `v` at height level `100` in the fu
 
 Only `100u` and `100v` fields are allowed at the moment. The event requires only two options:
 - The wind speed threshold: expressed in m/s, only two decimals of precision are used by the algorithm,
-so anything more precise will be truncated. Typical values of wind can be represented on 2 bytes, the algorithm will
-throw an error if the number provided is negative or too high to fit in 2 bytes.
+so anything more precise will be truncated. The algorithm will throw an error if the number provided is negative.
 - The time window: expressed in minutes. If the time window is smaller than the internal model time step,
 the detection will run only on the current time step.
 
