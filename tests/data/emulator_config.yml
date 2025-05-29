@@ -1,5 +1,5 @@
 emulator:
-  n_steps: 2
+  n_steps: 5
   grid_identifier: "N80"
   vertical_levels: 5
   fields:
@@ -13,6 +13,9 @@ emulator:
       apply:
         vortex_rollup:
           time_variation: 1.1
+        step:
+          area: [71.5, -25, 34.5, 45]
+          value: 21.0
     u:
       apply:
         levels:

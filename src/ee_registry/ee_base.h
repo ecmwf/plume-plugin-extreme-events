@@ -42,8 +42,9 @@ public:
      *
      * @param config The configuration for the extreme event. Each event has a different set of options, see
      *               their documentation for more details.
+     * @param type The type of extreme event.
      */
-    ExtremeEvent(const eckit::LocalConfiguration& config) {
+    ExtremeEvent(const eckit::LocalConfiguration& config, const std::string& type) {
         for (const auto& param : config.getSubConfigurations("required_params")) {
             if (param.getString("type") == "atlas_field") {
                 requiredFields_.push_back(param.getString("name"));
@@ -53,7 +54,7 @@ public:
             }
         }
         ASSERT_MSG(!requiredFields_.empty(),
-                   "Event '" + type_ + "' has no configured required Atlas fields, detection will fail.");
+                   "Event '" + type + "' has no configured required Atlas fields, detection will fail.");
     };
 
     /// Virtual destructor.
@@ -61,12 +62,12 @@ public:
 
     /**
      * @brief A structure that represents the result of detecting the extreme event.
-     * 
+     *
      * This information can later be used to build an Aviso request allowing the receiver to create a MARS request
      * to retrieve the relevant data regarding the detected event.
      */
     struct DetectionData {
-        std::vector<int> detectedPoints;
+        std::set<int> detectedCells;
         std::string description, param, levtype, levelist;
     };
 

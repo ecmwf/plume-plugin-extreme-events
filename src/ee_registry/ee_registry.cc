@@ -17,11 +17,13 @@ void ExtremeEventRegistry::registerEvent(const std::string& eventName, ExtremeEv
     registry[eventName] = factory;
 }
 
-std::unique_ptr<ExtremeEvent> ExtremeEventRegistry::createEvent(const std::string& eventName,
-                                                                const eckit::LocalConfiguration& config) {
-    auto it = registry.find(eventName);
-    ASSERT_MSG(it != registry.end(), "Event '" + eventName + "' is not in the registry, please fix or remove.");
-    return it->second(config);
+std::unique_ptr<ExtremeEvent> ExtremeEventRegistry::createEvent(const eckit::LocalConfiguration& config,
+                                                                plume::data::ModelData& modelData,
+                                                                const std::vector<int>& coarseMapping) {
+    auto it = registry.find(config.getString("name"));
+    ASSERT_MSG(it != registry.end(),
+               "Event '" + config.getString("name") + "' is not in the registry, please fix or remove.");
+    return it->second(config, modelData, coarseMapping);
 }
 
 ExtremeEventRegistry& ExtremeEventRegistry::instance() {
