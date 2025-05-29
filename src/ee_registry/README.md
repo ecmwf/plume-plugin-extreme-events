@@ -12,6 +12,7 @@ This key is `true` by default if omitted.
 - [Storm](#storm)
 - [Extreme wave](#extreme-wave)
 - [Wind drought](#wind-drought)
+- [Ramp](#ramp)
 
 ## Extreme wind
 
@@ -190,4 +191,46 @@ name: "wind_drought"
 required_params: *wind_drought
 wind_speed_cutout: 2.0
 time_window: 1440
+```
+
+## Ramp
+
+### Description
+
+This event with name `ramp` detects if the gradient varies positiviely or negatively more than a given value.
+Detection is triggered when the gradient of the parameter(s) (1+ grid point in the coarse cell) exceeds a given threshold
+over a specified time window.
+
+This event stores the parameter(s) value for each grid point and each time step in the time window.
+In case multiple parameters are passed, their magnitude is computed as stored value. It lies with the user to ensure
+this quantity makes sense.
+
+### Configuration examples
+
+Any combination of fields is allowed so users must be careful when configuring. The event allows several options:
+- The ramp thresholds: expressed in the same unit as the passed fields. There are two keys, one for ramp-ups and one
+  for ramp-downs. At least one should be present, they both should be positive values (the algorithm handles the sign).
+- The time window: expressed in minutes. If the time window is smaller than the internal model time step,
+the detection will run only on the current time step.
+
+```yaml
+parameters:
+  - &windRamp
+    - name: "100u"
+      type: "atlas_field"
+    - name: "100v"
+      type: "atlas_field"
+  - &temperatureRamp
+    - name: "2t"
+      type: "atlas_field"
+...
+- name: "ramp"
+  required_params: *windRamp
+  ramp_up_value: 10.0
+  ramp_down_value: 5.0
+  time_window: 30
+- name: "ramp"
+  required_params: *temperatureRamp
+  ramp_up_value: 10.0
+  time_window: 1440
 ```

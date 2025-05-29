@@ -19,6 +19,9 @@ plugins:
       - &waves
         - name: "swh"
           type: "atlas_field"
+      - &temperatureRamp
+        - name: "2t"
+          type: "atlas_field"
     core-config:
         aviso_url: "test"
         notify_endpoint: "/test"
@@ -54,3 +57,8 @@ plugins:
             required_params: *100m_wind
             wind_speed_cutout: 2.0
             time_window: 15
+          - name: "ramp"
+            enabled: true
+            required_params: *temperatureRamp
+            ramp_up_value: 10.0
+            time_window: 60
