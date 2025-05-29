@@ -22,7 +22,9 @@
 const std::string ExtremeWind::type_                           = "extreme_wind";
 const std::array<std::string, 6> ExtremeWind::supportedFields_ = {"100u", "100v", "10u", "10v", "u", "v"};
 
-ExtremeWind::ExtremeWind(const eckit::LocalConfiguration& config) : ExtremeEvent(config) {
+ExtremeWind::ExtremeWind(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+                         const std::vector<int>& coarseMapping) :
+    ExtremeEvent(config, type_), coarseMapping_(coarseMapping) {
     // Validate that all required fields are named like wind fields
     for (const auto& field : requiredFields_) {
         if (std::find(supportedFields_.begin(), supportedFields_.end(), field) == supportedFields_.end()) {
@@ -64,8 +66,8 @@ ExtremeWind::ExtremeWind(const eckit::LocalConfiguration& config) : ExtremeEvent
                     "The `model_levels` key can only be used when non surface fields are required", Here());
             }
             for (const auto& ml : eventConfig.getIntVector("model_levels")) {
-                if (ml > config.getInt("vertical_levels")) {
-                    throw eckit::BadValue("The model has " + std::to_string(config.getInt("vertical_levels")) +
+                if (ml > modelData.getInt("NFLEVG")) {
+                    throw eckit::BadValue("The model has " + std::to_string(modelData.getInt("NFLEVG")) +
                                               " vertical levels, please adjust the config.",
                                           Here());
                 }
@@ -143,6 +145,11 @@ std::vector<ExtremeEvent::DetectionData> ExtremeWind::detect(plume::data::ModelD
         }
 
         for (size_t idx_int = 0; idx_int < intervals_.size(); idx_int++) {
+            // Skip detection if the coarse cell has already fired
+            // TODO: is this condition worth adding because it adds an operation for each non firing point ?
+            if (ee_points[idx_int].detectedCells.find(coarseMapping_[idx]) != ee_points[idx_int].detectedCells.end()) {
+                continue;
+            }
             // If it is not a surface field we remove 1 from the index as model levels start at 1 and not 0
             int levelIdx = intervals_[idx_int].modelLevel > 0 ? intervals_[idx_int].modelLevel - 1 : 0;
             FIELD_TYPE_REAL valU =
@@ -157,7 +164,7 @@ std::vector<ExtremeEvent::DetectionData> ExtremeWind::detect(plume::data::ModelD
                 // /!\ if the upper bound is lower than the lower bound then we check
                 // only if the wind exceeds the lower bound
                 // if the upper bound is higher, then we check for belonging
-                ee_points[idx_int].detectedPoints.push_back(idx);
+                ee_points[idx_int].detectedCells.insert(coarseMapping_[idx]);
             }
         }
     }
