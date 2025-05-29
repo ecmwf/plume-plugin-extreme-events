@@ -18,6 +18,13 @@ emulator:
           area: [71.5, -25, 34.5, 45]
           value: 30.0
           variation: -7.5
+    2t:
+      levtype: "sfc"
+      apply:
+        step:
+          area: [71.5, -25, 34.5, 45]
+          value: 10.0
+          variation: 5.0
     u:
       apply:
         levels:
