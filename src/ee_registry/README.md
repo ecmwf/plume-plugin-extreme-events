@@ -10,6 +10,7 @@ This key is `true` by default if omitted.
 
 [Extreme wind](#extreme-wind)
 [Storm](#storm)
+- [Extreme wave](#extreme-wave)
 
 ## Extreme wind
 
@@ -115,4 +116,42 @@ name: "storm"
 required_params: *storm
 wind_speed_cutout: 20.0
 time_window: 60
+```
+
+## Extreme wave
+
+### Description
+
+This event with name `extreme_wave` detects significant wave height of combined wind sea and swell above a specified
+threshold. It scans the 'swh' field, and flags the grid points that exceed the threshold(s). The same `extreme_wave`
+event can be used to detect several thresholds, via configuring the `instances` list key. Each element represents a 
+threhsold with its corresponding description (optional). For instance, a user can configure two thresholds: 3.5 meters
+which corresponds to the height after which operations on wind farms are no longer safe, and 8 meters which suggest
+stormy conditions.
+
+> [!NOTE]
+> It is assumed that the coarsening established by the plugin applies to wave fields and atmospheric fields, which is
+true if they are represented on the same grid, but false otherwise.
+
+### Configuration examples
+
+The configuration below corresponds to the example given in the description. The thresholds are expressed in meters.
+By default the missing value is set to 9999, but it can be changed from the configuration if the wave fields use a
+different value. It is important to handle the missing value correctly in the wave fields because land areas are
+represented by the missing value, and should not trigger the detection.
+
+```yaml
+parameters:
+  - &extreme_waves
+    - name: "swh"
+      type: "atlas_field"
+...
+name: "extreme_wave"
+required_params: *extreme_waves
+missing_value: -9999
+instances:
+  - threshold: 8.0
+    description: "Storm conditions"
+  - threshold: 3.5
+    description: "Unsafe offshore wind-farm operations"
 ```

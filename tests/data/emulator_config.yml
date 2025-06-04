@@ -28,3 +28,9 @@ emulator:
               area: [-10, 113, -43.7, 155.3]
               value: 30.0
     v: "u"
+    swh:
+      levtype: "sfc"
+      apply:
+        step:
+          area: [71.5, -25, 34.5, 45]
+          value: 4.0
