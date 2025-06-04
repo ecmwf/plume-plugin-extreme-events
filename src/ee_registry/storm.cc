@@ -15,6 +15,8 @@
 #include <unordered_map>
 
 #include "atlas/array.h"
+#include "atlas/field.h"
+#include "atlas/functionspace.h"
 #include "eckit/exception/Exceptions.h"
 
 #include "storm.h"
@@ -48,11 +50,17 @@ std::vector<ExtremeEvent::DetectionData> Storm::detect(plume::data::ModelData& m
     std::vector<DetectionData> ee_points;
     auto fieldU = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getAtlasFieldShared("100u"));
     auto fieldV = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getAtlasFieldShared("100v"));
+    auto halo = atlas::array::make_view<int, 1>(modelData.getAtlasFieldShared("100u").functionspace().ghost());
     // 1. Slide the wind speeds window with current time step values
     windSpeeds_.erase(windSpeeds_.begin() + (ntimeSteps_ - 1) * coarseMapping_.size(), windSpeeds_.end());
     // reverse inserting element to maintain indices
     for (atlas::idx_t idx = coarseMapping_.size() - 1; idx >= 0; idx--) {
-        windSpeeds_.push_front(std::sqrt(fieldU(idx, 0) * fieldU(idx, 0) + fieldV(idx, 0) * fieldV(idx, 0)));
+        if (halo(idx) > 0) {
+            windSpeeds_.push_front(0); // Add values with no effect for halo points
+        }
+        else {
+            windSpeeds_.push_front(std::sqrt(fieldU(idx, 0) * fieldU(idx, 0) + fieldV(idx, 0) * fieldV(idx, 0)));
+        }
     }
     
     if (modelData.getInt("NSTEP") < ntimeSteps_) {  // Fill the wind speed array but do not run detection yet
