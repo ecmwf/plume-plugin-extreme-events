@@ -6,6 +6,7 @@ set(EE_PLUGIN_TEST_FILES_H
     ../src/ee_registry/ee_registry.h
     ../src/ee_registry/extreme_wind.h
     ../src/ee_registry/storm.h
+    ../src/ee_registry/extreme_wave.h
     ../src/plugin_types.h
 )
 
@@ -20,6 +21,7 @@ set(EE_PLUGIN_TEST_FILES_CC
     ../src/ee_registry/ee_registry.cc
     ../src/ee_registry/extreme_wind.cc
     ../src/ee_registry/storm.cc
+    ../src/ee_registry/extreme_wave.cc
 )
 
 set(EE_PLUGIN_TEST_SOURCES

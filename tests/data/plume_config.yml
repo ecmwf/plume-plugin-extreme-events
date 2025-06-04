@@ -16,6 +16,9 @@ plugins:
           type: "atlas_field"
         - name: "100v"
           type: "atlas_field"
+      - &waves
+        - name: "swh"
+          type: "atlas_field"
     core-config:
         aviso_url: "test"
         notify_endpoint: "/test"
@@ -38,3 +41,11 @@ plugins:
             required_params: *storm
             wind_speed_cutout: 20.0
             time_window: 60
+          - name: "extreme_wave"
+            enabled: true
+            required_params: *waves
+            instances:
+              - threshold: 8.0
+                description: "Storm conditions"
+              - threshold: 3.5
+                description: "Unsafe offshore wind-farm operations"
