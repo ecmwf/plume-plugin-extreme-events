@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ecbuild_find_package( NAME eckit  VERSION  1.28.5   REQUIRED )
 ecbuild_find_package( NAME atlas  VERSION  0.41 REQUIRED )
-ecbuild_find_package( NAME plume  VERSION  0.0.1  REQUIRED )
+ecbuild_find_package( NAME plume  VERSION  0.3.0  REQUIRED )
 
 ecbuild_add_option(FEATURE EE_PLUGIN_SINGLE_PRECISION DESCRIPTION "Single precision Atlas fields" DEFAULT OFF)
 
