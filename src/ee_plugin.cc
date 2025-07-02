@@ -49,7 +49,8 @@ void EEPluginCore::setup() {
             }
         }
         if (hasRequiredParams) {
-            extremeEvents_.push_back(ExtremeEventRegistry::instance().createEvent(ee, modelData(), Point2HPcell_));
+            extremeEvents_[ee.getInt("run_with_model", -1)].push_back(
+                ExtremeEventRegistry::instance().createEvent(ee, modelData(), Point2HPcell_));
             eckit::Log::info() << ee.getString("name") << " ";
         }
     }
@@ -60,9 +61,36 @@ void EEPluginCore::setup() {
 }
 
 void EEPluginCore::run() {
-    // Determine the elapsed time in the simulation in minutes
-    std::string elapsedTime = modelStepStr();
-    for (auto& ee : extremeEvents_) {
+    if (extremeEvents_.find(-1) == extremeEvents_.end()) {
+        eckit::Log::warning() << "No extreme event loaded for generic caller, skip..." << std::endl;
+        return;
+    }
+    detect(-1);
+}
+
+void EEPluginCore::run(int caller) {
+    if (caller == -1) {
+        run();
+    }
+    else {
+        // Run the generic events but do not warn if there are none
+        if (extremeEvents_.find(-1) != extremeEvents_.end()) {
+            eckit::Log::info() << "Running generic extreme events as part of caller " << caller << std::endl;
+            detect(-1);
+        }
+        // Run the caller-specific events if there are any
+        if (extremeEvents_.find(caller) == extremeEvents_.end()) {
+            eckit::Log::warning() << "No extreme event loaded for caller " << caller << ", skip..." << std::endl;
+            return;
+        }
+        detect(caller);
+    }
+}
+
+void EEPluginCore::detect(int caller) {
+    for (auto& ee : extremeEvents_[caller]) {
+        // Determine the elapsed time in the simulation in minutes
+        std::string elapsedTime = modelStepStr(ee->simulatedSeconds(modelData()));
         // Run the detection for each extreme event suite
         auto results = ee->detect(modelData());
         for (size_t idx = 0; idx < results.size(); ++idx) {
@@ -99,11 +127,10 @@ void EEPluginCore::setHEALPixMapping() {
     mapLonLatToHEALPixCell(healpixRes_, fs, Point2HPcell_, HPcell2polygon_);
 }
 
-std::string EEPluginCore::modelStepStr() {
-    if (modelData().getInt("NSTEP") == 0) {
+std::string EEPluginCore::modelStepStr(int seconds) {
+    if (seconds == 0) {
         return "0s";
     }
-    int seconds = static_cast<int>(std::round(modelData().getInt("NSTEP") * modelData().getDouble("TSTEP")));
     // Sub-hourly supported time units (except for seconds)
     const std::vector<std::pair<int, std::string>> timeUnits = {{86400, "d"}, {3600, "h"}, {60, "m"}};
     for (const auto& unit : timeUnits) {
@@ -119,7 +146,7 @@ std::string EEPluginCore::modelStepStr() {
 
 // ------------------------------------------------------
 
-EEPlugin::EEPlugin() : Plugin("EEPlugin"){};
+EEPlugin::EEPlugin() : Plugin("EEPlugin") {};
 
 const EEPlugin& EEPlugin::instance() {
     static EEPlugin instance;

@@ -53,6 +53,9 @@ ExtremeWave::ExtremeWave(const eckit::LocalConfiguration& config, plume::data::M
     // Sort thresholds by decreasing values (as high thresholds should automatically trigger small thresholds)
     std::sort(thresholds_.begin(), thresholds_.end(),
               [](const Threshold& a, const Threshold& b) { return a.value > b.value; });
+
+    // Associate the function pointer to derive sim time from wave model data
+    simulatedSeconds = waveElapsedSeconds;
 }
 
 std::vector<ExtremeEvent::DetectionData> ExtremeWave::detect(plume::data::ModelData& modelData) {

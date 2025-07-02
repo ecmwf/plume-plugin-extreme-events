@@ -8,6 +8,15 @@ extreme event plugin configuration. Anchors can be used to avoid errors and dupl
 The `enabled` key is optional, it can be set to `false` to keep an event in the configuration but not run it in the plugin.
 This key is `true` by default if omitted.
 
+The `run_with_model` key is optional. It can be used when running the detection to filter events.
+Typically, it is possible that a subset of events run on wave fields, while another subset runs on atmospheric fields,
+and a third one runs on both. Depending on the simulation in which Plume is plugged, wave and atmosphere can run
+asynchronously, and sync every predetermined number of steps. Therefore, this key can be used to identify the model
+that triggerred the plugin run, so that wave events run at wave update frequency, atmospheric events run at
+atmospheric update frequency, and combined events run at sync frequency, etc. It is an int, and it defaults to `-1`,
+which means there is no particular filtering based on the caller, and all events will run every time the plugin is
+called without a tag. **Note:** Setting this key properly requires knowledge of the model in which Plume is plugged in.
+
 - [Extreme wind](#extreme-wind)
 - [Storm](#storm)
 - [Extreme wave](#extreme-wave)
@@ -56,6 +65,7 @@ parameters:
 name: "extreme_wind"
 enabled: true
 required_params: *extreme_wind
+run_with_model: 1
 instances:
   - lower_bound: 25.0 # this is a threshold
     upper_bound: 0.0

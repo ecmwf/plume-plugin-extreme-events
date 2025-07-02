@@ -10,6 +10,8 @@
  */
 #ifndef EE_BASE_H
 #define EE_BASE_H
+#include <cmath>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -28,6 +30,29 @@ private:
 protected:
     std::vector<std::string> requiredParams_;
     std::vector<std::string> requiredFields_;
+    int caller_;  ///< member identifying which model call will actually trigger the detection
+
+    /**
+     * @brief Reads the model data to know how many seconds of simulation have run.
+     *
+     * `NSTEP` and `TSTEP` are unconditionnally requested by the plugin as they are usually among the set of always
+     * offered parameters, so they do not need to be requested per event, and can be queried anywhere in the plugin.
+     *
+     * @param modelData The model data offered through Plume.
+     */
+    static int elapsedSeconds(plume::data::ModelData& modelData) {
+        return static_cast<int>(std::round(modelData.getInt("NSTEP") * modelData.getDouble("TSTEP")));
+    }
+
+    /**
+     * @brief Reads the model data to know how many seconds of wave simulation have run.
+     *
+     * `WSTEP` is unconditionnally requested by the plugin as it usually is among the set of always offered parameters,
+     * so it does not need to be requested per event, and can be queried anywhere in the plugin.
+     *
+     * @param modelData The model data offered through Plume.
+     */
+    static int waveElapsedSeconds(plume::data::ModelData& modelData) { return modelData.getInt("WSTEP"); }
 
 public:
     /// Default constructor.
@@ -39,12 +64,15 @@ public:
      * All events should have a `required_params` key, even if empty, even though it is unlikely that an event
      * does not require anything from the model data. Each event is responsible for ensuring it accepts the
      * provided configuration.
+     * By default, the pointer to get the simulation time is set to use the main step model params. Each event can
+     * modify that individually, for instance, if their frequency is based on wave update.
      *
      * @param config The configuration for the extreme event. Each event has a different set of options, see
      *               their documentation for more details.
      * @param type The type of extreme event.
      */
-    ExtremeEvent(const eckit::LocalConfiguration& config, const std::string& type) {
+    ExtremeEvent(const eckit::LocalConfiguration& config, const std::string& type) :
+        caller_(config.getInt("run_with_model", -1)), simulatedSeconds(elapsedSeconds) {
         for (const auto& param : config.getSubConfigurations("required_params")) {
             if (param.getString("type") == "atlas_field") {
                 requiredFields_.push_back(param.getString("name"));
@@ -89,9 +117,13 @@ public:
      */
     virtual std::vector<DetectionData> detect(plume::data::ModelData& modelData) = 0;
 
+    std::function<int(plume::data::ModelData& modelData)>
+        simulatedSeconds;  ///< Associated with wave or atmospheric version depending on event
+
     /// Getters
     std::vector<std::string> requiredParams() const { return requiredParams_; }
     std::vector<std::string> requiredFields() const { return requiredFields_; }
+    int getCaller() const { return caller_; }
 };
 
 #endif  // EE_BASE_H

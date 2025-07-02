@@ -8,6 +8,8 @@
  * granted to it by virtue of its status as an intergovernmental organisation nor
  * does it submit to any jurisdiction.
  */
+#include <map>
+
 #include "atlas/grid.h"
 #include "eckit/config/Configuration.h"
 #include "eckit/config/LocalConfiguration.h"
@@ -80,12 +82,25 @@ public:
      */
     void run() override;
 
+    /**
+     * @brief Runs the plugin with a filter based on the location of the call.
+     *
+     * The steps are the same as described above, except only the events matching the caller have their detection ran.
+     * The run of events with generic callers is always triggerred regardless of the tag.
+     * There is no guarantee that the configured caller for a subset of events will actually call the plugin at any
+     * point in the simulation. The plugin does not issue any particular warning in this situation, it is the user's
+     * responsibility to ensure the caller code configured is consistent with the model(s).
+     *
+     * @param caller The integer identifying the location in the simulation where the call was triggerred.
+     */
+    void run(int caller) override;
+
     /// Returns the plugin core type, for Plume usage.
     constexpr static const char* type() { return "ee-plugincore"; }
 
 private:
     std::vector<eckit::LocalConfiguration> extremeEventConfig_;
-    std::vector<std::unique_ptr<ExtremeEvent>>
+    std::map<int, std::vector<std::unique_ptr<ExtremeEvent>>>
         extremeEvents_;  ///< A single plugin manages all instances of different extreme events
 
     AvisoNotificationHandler notificationHandler_;
@@ -106,10 +121,18 @@ private:
     /**
      * @brief Returns the MARS value string representing the sub-hourly model step.
      *
+     * @param seconds The number of seconds elapsed in the simulation to turn into a string.
      * @warning It is important to note that this step is only internal, there is no guarantee that it will
      *          correspond to an actual output step. Data from this step may not be retrievable after the run.
      */
-    std::string modelStepStr();
+    std::string modelStepStr(int seconds);
+
+    /**
+     * @brief Runs steps 1, 2, 3 described in the run method.
+     *
+     * @param caller The filter value to get the events to run detection on.
+     */
+    void detect(int caller);
 };
 
 
@@ -135,6 +158,7 @@ public:
         protocol.requireInt("NSTEP");
         protocol.requireDouble("TSTEP");
         protocol.requireInt("NFLEVG");
+        protocol.requireInt("WSTEP");
         return protocol;
     }
 
