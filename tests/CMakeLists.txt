@@ -7,6 +7,8 @@ set(EE_PLUGIN_TEST_FILES_H
     ../src/ee_registry/extreme_wind.h
     ../src/ee_registry/storm.h
     ../src/ee_registry/extreme_wave.h
+    ../src/ee_registry/wind_drought.h
+    ../src/ee_registry/ramp.h
     ../src/plugin_types.h
 )
 
@@ -22,6 +24,8 @@ set(EE_PLUGIN_TEST_FILES_CC
     ../src/ee_registry/extreme_wind.cc
     ../src/ee_registry/storm.cc
     ../src/ee_registry/extreme_wave.cc
+    ../src/ee_registry/wind_drought.cc
+    ../src/ee_registry/ramp.cc
 )
 
 set(EE_PLUGIN_TEST_SOURCES
@@ -29,30 +33,38 @@ set(EE_PLUGIN_TEST_SOURCES
     ${EE_PLUGIN_TEST_FILES_CC}
 )
 
-ecbuild_add_test (
-    TARGET ee_plugin_test_core
-    SOURCES
-        ${EE_PLUGIN_TEST_SOURCES}
-        test_ee_plugin.cc
-    INCLUDES
-        ${CMAKE_CURRENT_SOURCE_DIR}/../src
-        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>
-    LIBS
-        eckit
-        plume_plugin
-)
+foreach(prec sp dp)
+    if (HAVE_EE_PLUGIN_${prec})
+        ecbuild_add_test (
+            TARGET ee_plugin_test_core_${prec}
+            SOURCES
+                ${EE_PLUGIN_TEST_SOURCES}
+                test_ee_plugin.cc
+            INCLUDES
+                ${CMAKE_CURRENT_SOURCE_DIR}/../src
+                $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>
+            LIBS
+                eckit
+                plume_plugin
+        )
+    endif()
+endforeach()
 
-ecbuild_add_test(
-    TARGET  ee_plugin_run_test
-    COMMAND nwp_emulator_run.x
-    ENVIRONMENT CLASS="test"
-                TYPE="test"
-                EXPVER="0001"
-                DATE="00000000"
-                TIME="0000"
-                PLUME_PLUGIN_DEV=1
-                DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib:$ENV{DYLD_LIBRARY_PATH}
-                LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib:$ENV{LD_LIBRARY_PATH}
-    ARGS --config-src=${CMAKE_CURRENT_SOURCE_DIR}/data/emulator_config.yml
-         --plume-cfg=${CMAKE_CURRENT_SOURCE_DIR}/data/plume_config.yml
-)
+foreach(prec sp dp)
+    if (HAVE_EE_PLUGIN_${prec})
+        ecbuild_add_test(
+            TARGET  ee_plugin_run_test_${prec}
+            COMMAND nwp_emulator_run_${prec}.x
+            ENVIRONMENT CLASS="test"
+                        TYPE="test"
+                        EXPVER="0001"
+                        DATE="00000000"
+                        TIME="0000"
+                        PLUME_PLUGIN_DEV=1
+                        DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib:$ENV{DYLD_LIBRARY_PATH}
+                        LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib:$ENV{LD_LIBRARY_PATH}
+            ARGS --config-src=${CMAKE_CURRENT_SOURCE_DIR}/data/emulator_config.yml
+                --plume-cfg=${CMAKE_CURRENT_SOURCE_DIR}/data/plume_config_${prec}.yml
+        )
+    endif()
+endforeach()
