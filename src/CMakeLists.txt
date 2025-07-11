@@ -56,24 +56,30 @@ set(EE_PLUGIN_SOURCES
     ${EE_PLUGIN_FILES_H}
     ${EE_PLUGIN_FILES_CC}
 )
+foreach(prec sp dp)
+    if (HAVE_EE_PLUGIN_${prec})
+        set(EE_PLUGIN_LIB_NAME "extreme_event_plugin_${prec}")
+        message(STATUS "Building plugin ${EE_PLUGIN_LIB_NAME} and definitions: ${PLUGINS_DEFINITIONS_${prec}}")
 
-ecbuild_add_library(
-    TARGET extreme_event_plugin
-    INSTALL_HEADERS LISTED
-    HEADER_DESTINATION
-        ${INSTALL_INCLUDE_DIR}/plume-plugin-extreme-events
-    SOURCES
-        ${EE_PLUGIN_SOURCES}
-    PUBLIC_INCLUDES
-       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>
-       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
-    PRIVATE_INCLUDES
-        "${MPI_INCLUDE_DIRS}"
-    DEFINITIONS
-        ${PLUGINS_DEFINITIONS}
-    PUBLIC_LIBS
-        atlas
-        eckit
-        plume
-        plume_plugin
-)
+        ecbuild_add_library(
+            TARGET ${EE_PLUGIN_LIB_NAME}
+            INSTALL_HEADERS LISTED
+            HEADER_DESTINATION
+                ${INSTALL_INCLUDE_DIR}/plume-plugin-extreme-events-${prec}
+            SOURCES
+                ${EE_PLUGIN_SOURCES}
+            PUBLIC_INCLUDES
+                $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>
+                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+            PRIVATE_INCLUDES
+                "${MPI_INCLUDE_DIRS}"
+            DEFINITIONS
+                ${PLUGINS_DEFINITIONS_${prec}}
+            PUBLIC_LIBS
+                atlas
+                eckit
+                plume
+                plume_plugin
+        )
+    endif()
+endforeach()

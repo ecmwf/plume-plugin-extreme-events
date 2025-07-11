@@ -1,6 +1,6 @@
 plugins:
   - name: "EEPlugin"
-    lib: "extreme_event_plugin"
+    lib: "extreme_event_plugin_sp"
     parameters:
       - &extreme_wind
         - name: "u"
