@@ -22,10 +22,32 @@ ecbuild_find_package( NAME eckit  VERSION  1.28.5   REQUIRED )
 ecbuild_find_package( NAME atlas  VERSION  0.41 REQUIRED )
 ecbuild_find_package( NAME plume  VERSION  0.3.0  REQUIRED )
 
-ecbuild_add_option(FEATURE EE_PLUGIN_SINGLE_PRECISION DESCRIPTION "Single precision Atlas fields" DEFAULT OFF)
+# The plugin can be built in Single Precision (SP) and/or Double Precision (DP)
+ecbuild_add_option( FEATURE SINGLE_PRECISION
+                    DESCRIPTION "Compile plugin in single precision"
+                    DEFAULT OFF )
 
-if( HAVE_EE_PLUGIN_SINGLE_PRECISION ) 
-  list(APPEND PLUGINS_DEFINITIONS WITH_EE_PLUGIN_SINGLE_PRECISION )
+ecbuild_add_option( FEATURE PLUME_PLUGINS_SINGLE_PRECISION
+                    DESCRIPTION
+                    "Compile plugin for single precision fields"
+                    DEFAULT OFF)
+
+ecbuild_add_option( FEATURE PLUME_PLUGINS_DOUBLE_PRECISION
+                    DESCRIPTION
+                    "Compile plugin for double precision fields"
+                    DEFAULT ON)
+
+set( HAVE_EE_PLUGIN_sp 0)
+set( HAVE_EE_PLUGIN_dp 0)
+
+if (HAVE_SINGLE_PRECISION OR HAVE_PLUME_PLUGINS_SINGLE_PRECISION)
+  set( PLUGINS_DEFINITIONS_sp WITH_EE_PLUGIN_SINGLE_PRECISION )
+  set( HAVE_EE_PLUGIN_sp 1)
+endif()
+
+if (HAVE_PLUME_PLUGINS_DOUBLE_PRECISION)
+  set( PLUGINS_DEFINITIONS_dp WITH_EE_PLUGIN_DOUBLE_PRECISION )
+  set( HAVE_EE_PLUGIN_dp 1)
 endif()
 
 ## Plugins
