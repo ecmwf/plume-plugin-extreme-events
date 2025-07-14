@@ -51,7 +51,7 @@ foreach(prec sp dp)
 endforeach()
 
 foreach(prec sp dp)
-    if (HAVE_EE_PLUGIN_${prec})
+    if (HAVE_EE_PLUGIN_${prec} AND HAVE_NWP_EMULATOR_TESTS)
         ecbuild_add_test(
             TARGET  ee_plugin_run_test_${prec}
             COMMAND nwp_emulator_run_${prec}.x

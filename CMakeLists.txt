@@ -50,6 +50,11 @@ if (HAVE_PLUME_PLUGINS_DOUBLE_PRECISION)
   set( HAVE_EE_PLUGIN_dp 1)
 endif()
 
+# Tests using the Plume NWP Emulator are optional
+ecbuild_add_option( FEATURE NWP_EMULATOR_TESTS
+                    DESCRIPTION "Add plugin tests using the Plume NWP emulator"
+                    DEFAULT ON )
+
 ## Plugins
 add_subdirectory(src)
 
