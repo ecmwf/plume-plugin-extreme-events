@@ -63,6 +63,11 @@ void EEPluginCore::run() {
     // Determine the elapsed time in the simulation in minutes
     std::string elapsedTime = modelStepStr();
     for (auto& ee : extremeEvents_) {
+        // Determine whether or not the event should run
+        if (!std::any_of(ee->requiredFields().begin(), ee->requiredFields().end(),
+                         [this](const std::string& name) { return modelData().isUpdated(name); })) {
+            continue;  // A single updated field is enough to allow the detection
+        }
         // Run the detection for each extreme event suite
         auto results = ee->detect(modelData());
         for (size_t idx = 0; idx < results.size(); ++idx) {
@@ -119,7 +124,7 @@ std::string EEPluginCore::modelStepStr() {
 
 // ------------------------------------------------------
 
-EEPlugin::EEPlugin() : Plugin("EEPlugin"){};
+EEPlugin::EEPlugin() : Plugin("EEPlugin") {};
 
 const EEPlugin& EEPlugin::instance() {
     static EEPlugin instance;

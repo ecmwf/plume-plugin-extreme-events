@@ -90,8 +90,9 @@ public:
     virtual std::vector<DetectionData> detect(plume::data::ModelData& modelData) = 0;
 
     /// Getters
-    std::vector<std::string> requiredParams() const { return requiredParams_; }
-    std::vector<std::string> requiredFields() const { return requiredFields_; }
+    const std::vector<std::string>& requiredParams() const { return requiredParams_; }
+    const std::vector<std::string>& requiredFields() const { return requiredFields_; }
+    virtual const std::string& type() const = 0;
 };
 
 #endif  // EE_BASE_H

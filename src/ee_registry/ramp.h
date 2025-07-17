@@ -72,6 +72,13 @@ public:
      */
     std::vector<ExtremeEvent::DetectionData> detect(plume::data::ModelData& modelData) override;
 
+    /**
+     * @brief Returns the type/name of the extreme event as used in the configuration.
+     */
+    const std::string& type() const override {
+        return type_;
+    }
+
     /// Register the ramp event into the registry so it can be used in the plugin.
     static struct Registrar {
         Registrar() {
