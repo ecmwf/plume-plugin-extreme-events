@@ -41,7 +41,7 @@ ExtremeWind::ExtremeWind(const eckit::LocalConfiguration& config, plume::data::M
     };
 
     for (const auto& eventConfig : config.getSubConfigurations("instances")) {
-        if (eventConfig.isIntegralList("heights") && !eventConfig.getIntVector("heights").empty()) {
+        if (eventConfig.has("heights")) {
             throw eckit::BadParameter(
                 "Detecting extreme wind at given heights is not currently supported, please remove from config.");
         }
@@ -57,7 +57,7 @@ ExtremeWind::ExtremeWind(const eckit::LocalConfiguration& config, plume::data::M
         }
 
         std::ostringstream fieldDesc;
-        if (eventConfig.isIntegralList("model_levels")) {
+        if (eventConfig.has("model_levels")) {
             // Ensure that `u` or `v` fields are provided
             std::string u = findField("u");
             std::string v = findField("v");

@@ -18,9 +18,9 @@ project( plume_plugin_extreme_events LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-ecbuild_find_package( NAME eckit  VERSION  1.28.5   REQUIRED )
-ecbuild_find_package( NAME atlas  VERSION  0.41 REQUIRED )
-ecbuild_find_package( NAME plume  VERSION  0.3.0  REQUIRED )
+ecbuild_find_package( NAME eckit )
+ecbuild_find_package( NAME atlas )
+ecbuild_find_package( NAME plume  VERSION  0.2.0  REQUIRED )
 
 # The plugin can be built in Single Precision (SP) and/or Double Precision (DP)
 ecbuild_add_option( FEATURE SINGLE_PRECISION

@@ -135,6 +135,11 @@ public:
         protocol.requireInt("NSTEP");
         protocol.requireDouble("TSTEP");
         protocol.requireInt("NFLEVG");
+        // Hardcoded parameters here as Plume 0.2 does not have the param negotiation from config
+        protocol.requireAtlasField("100u");
+        protocol.requireAtlasField("u");
+        protocol.requireAtlasField("100v");
+        protocol.requireAtlasField("v");
         return protocol;
     }
 

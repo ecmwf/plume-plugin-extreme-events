@@ -52,7 +52,8 @@ CASE("test_aviso_notification") {
     std::string data                        = R"({"hello": "world"})";
     std::vector<atlas::PointLonLat> polygon = {atlas::PointLonLat{250.3, 16.9}, atlas::PointLonLat{247.4, 14.4},
                                                atlas::PointLonLat{253.1, 14.4}, atlas::PointLonLat{250.3, 12.0}};
-    EXPECT_EQUAL(notificationHandler.send(data, polygon), 999);
+    int status = notificationHandler.send(data, polygon);
+    EXPECT_EQUAL(status, 999);
 
     // Unset environment variables
     for (const auto& var : vars) {
