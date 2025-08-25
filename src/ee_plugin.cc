@@ -10,8 +10,12 @@
  */
 #include <cmath>
 #include <sstream>
+#include <string>
+#include <fstream>
+
 
 #include "atlas/field/Field.h"
+#include "atlas/parallel/mpi/mpi.h"
 
 #include "ee_plugin.h"
 #include "healpix_utils.h"
@@ -22,8 +26,9 @@ using namespace HEALPixUtils;
 namespace ExtremeEventPlugin {
 
 EEPluginCore::EEPluginCore(const eckit::Configuration& conf) : PluginCore(conf) {
-    healpixRes_         = conf.getInt("healpix_res", 2);
-    enableNotification_ = conf.getBool("enable_notification", false);
+    healpixRes_                = conf.getInt("healpix_res", 2);
+    enableNotification_        = conf.getBool("enable_notification", false);
+    enableLog_                 = conf.getBool("enable_log", false);
     if (enableNotification_) {
         notificationHandler_ = AvisoNotificationHandler(conf.getString("aviso_url"), conf.getString("notify_endpoint"));
     }
@@ -61,6 +66,26 @@ void EEPluginCore::setup() {
 }
 
 void EEPluginCore::run() {
+
+    // if logging is enabled, open a log file with proc number and step number
+    std::ofstream logFile;
+    if (enableLog_) {
+        std::string logFileName = "ee_plugin_log_proc" + std::to_string(atlas::mpi::rank()) + "_step" +
+                                  std::to_string(modelData().getInt("NSTEP")) + ".log";
+
+        // check if the envaronment variable PLUME_PLUGINS_OUTPUT_DIR is set,
+        // is so, prepend it to the filename
+        const char* outputDir = std::getenv("PLUME_PLUGINS_OUTPUT_DIR");
+        if (outputDir) {
+            logFileName = std::string(outputDir) + "/" + logFileName;
+        }
+        logFile.open(logFileName);
+        if (!logFile.is_open()) {
+            eckit::Log::error() << "Could not open log file " << logFileName << " for writing." << std::endl;
+            enableLog_ = false;
+        }
+    }
+
     // Determine the elapsed time in the simulation in minutes
     std::string elapsedTime = modelStepStr();
     for (auto& ee : extremeEvents_) {
@@ -94,8 +119,60 @@ void EEPluginCore::run() {
                         << "; levelist: " << results[idx].levelist;
                 std::cout << message.str() << std::endl;
             }
+
+            // Write payload and polygons to log file
+            if (enableLog_) {
+
+                // Overall message that each process writes to file at each step
+                std::string proc_step_logstring;
+
+                // Common part of the message
+                std::ostringstream message;
+                message << "[EE Plume Plugin] >>> event: " << results[idx].description << "; step: " << elapsedTime
+                        << "; param: " << results[idx].param << "; levtype: " << results[idx].levtype
+                        << "; levelist: " << results[idx].levelist
+                        << "; polygons: [";
+
+                auto write_polygon = [](std::ostringstream& ss, const std::vector<atlas::PointLonLat>& polygon) {
+                    ss << "(";
+                    for (size_t i = 0; i < polygon.size() - 1; ++i) {
+                        ss << polygon[i].lat() << "," << polygon[i].lon() << ",";
+                    }
+                    ss << polygon.back().lat() << "," << polygon.back().lon();
+                    ss << ")";
+                };
+
+                // Write polygons
+                std::ostringstream polygonSS;
+                for (size_t iPol=0; iPol<ee_polygon_points.size() - 1; ++iPol) {
+                    auto polygon = ee_polygon_points[iPol];
+                    write_polygon(polygonSS, polygon);
+                    polygonSS << ",";
+                }
+
+                // Last polygon without trailing comma
+                auto polygon = ee_polygon_points.back();
+                write_polygon(polygonSS, polygon);
+
+                message << polygonSS.str() << "]";
+
+                // write message to file
+                proc_step_logstring = message.str();
+                logFile << proc_step_logstring << std::endl;
+            }
         }
     }
+
+    // close log file
+    if (enableLog_) {
+        // check that the file is open
+        if (logFile.is_open()) {
+            logFile.close();
+        } else {
+            eckit::Log::error() << "Could not close log file, it was not open." << std::endl;
+        }
+    }
+
 }
 
 void EEPluginCore::setHEALPixMapping() {

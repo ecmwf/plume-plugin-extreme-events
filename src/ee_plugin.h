@@ -90,6 +90,7 @@ private:
 
     AvisoNotificationHandler notificationHandler_;
     bool enableNotification_;
+    bool enableLog_;
 
     int healpixRes_;
     std::vector<int> Point2HPcell_;                                ///< Mapping from point index to HEALPix cell index
