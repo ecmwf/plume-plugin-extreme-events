@@ -69,22 +69,6 @@ void EEPluginCore::run() {
 
     // if logging is enabled, open a log file with proc number and step number
     std::ofstream logFile;
-    if (enableLog_) {
-        std::string logFileName = "ee_plugin_log_proc" + std::to_string(atlas::mpi::rank()) + "_step" +
-                                  std::to_string(modelData().getInt("NSTEP")) + ".log";
-
-        // check if the envaronment variable PLUME_PLUGINS_OUTPUT_DIR is set,
-        // is so, prepend it to the filename
-        const char* outputDir = std::getenv("PLUME_PLUGINS_OUTPUT_DIR");
-        if (outputDir) {
-            logFileName = std::string(outputDir) + "/" + logFileName;
-        }
-        logFile.open(logFileName);
-        if (!logFile.is_open()) {
-            eckit::Log::error() << "Could not open log file " << logFileName << " for writing." << std::endl;
-            enableLog_ = false;
-        }
-    }
 
     // Determine the elapsed time in the simulation in minutes
     std::string elapsedTime = modelStepStr();
@@ -122,6 +106,26 @@ void EEPluginCore::run() {
 
             // Write payload and polygons to log file
             if (enableLog_) {
+
+                if (!logFile.is_open()) {
+
+                    std::stringstream ss;
+                    ss << "ee_plugin_proc-" << atlas::mpi::rank() << "_step-" << modelData().getInt("NSTEP") << ".log";
+                    std::string logFileName{ss.str()};
+
+                    // check if the envaronment variable PLUME_PLUGINS_OUTPUT_DIR is set,
+                    // is so, prepend it to the filename
+                    const char* outputDir = std::getenv("PLUME_PLUGINS_OUTPUT_DIR");
+                    if (outputDir) {
+                        logFileName = std::string(outputDir) + "/" + logFileName;
+                    }
+
+                    logFile.open(logFileName, std::ios::out);
+                    if (!logFile.is_open()) {
+                        eckit::Log::error() << "Could not open log file: " << logFileName << std::endl;
+                        enableLog_ = false;  // disable logging if we cannot open the file
+                    }
+                }
 
                 // Overall message that each process writes to file at each step
                 std::string proc_step_logstring;
@@ -163,13 +167,10 @@ void EEPluginCore::run() {
         }
     }
 
-    // close log file
+    // close log file, if opened
     if (enableLog_) {
-        // check that the file is open
         if (logFile.is_open()) {
             logFile.close();
-        } else {
-            eckit::Log::error() << "Could not close log file, it was not open." << std::endl;
         }
     }
 
