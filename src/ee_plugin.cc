@@ -29,6 +29,7 @@ EEPluginCore::EEPluginCore(const eckit::Configuration& conf) : PluginCore(conf) 
     healpixRes_                = conf.getInt("healpix_res", 2);
     enableNotification_        = conf.getBool("enable_notification", false);
     enableLog_                 = conf.getBool("enable_log", false);
+    runEvery_                  = conf.getInt("run_every", 1);
     if (enableNotification_) {
         notificationHandler_ = AvisoNotificationHandler(conf.getString("aviso_url"), conf.getString("notify_endpoint"));
     }
@@ -66,6 +67,14 @@ void EEPluginCore::setup() {
 }
 
 void EEPluginCore::run() {
+
+    // Run only every N steps if specified
+    int step = modelData().getInt("NSTEP");
+    if ( step % runEvery_ != 0 ) {
+        return;
+    }
+
+    eckit::Log::info() << "Running extreme event detection plugin at step " << step << std::endl;
 
     // if logging is enabled, open a log file with proc number and step number
     std::ofstream logFile;

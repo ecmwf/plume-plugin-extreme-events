@@ -91,6 +91,7 @@ private:
     AvisoNotificationHandler notificationHandler_;
     bool enableNotification_;
     bool enableLog_;
+    int runEvery_; ///< Run the plugin every N model steps
 
     int healpixRes_;
     std::vector<int> Point2HPcell_;                                ///< Mapping from point index to HEALPix cell index
