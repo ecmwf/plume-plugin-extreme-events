@@ -189,7 +189,7 @@ void EEPluginCore::setHEALPixMapping() {
     // TODO: Should this plugin handle multiple functionspaces if fields passed are not all on the same mesh?
     // Retrieve the function space from the model data
     // Since the plugin has negotiated hardcoded fields to comply with Plume 0.2 we can use one of these
-    auto fs = modelData().getAtlasFieldShared("u").functionspace();
+    auto fs = modelData().getAtlasFieldShared("100u").functionspace();
     mapLonLatToHEALPixCell(healpixRes_, fs, Point2HPcell_, HPcell2polygon_);
 }
 
