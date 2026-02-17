@@ -68,10 +68,10 @@ plugins:
     lib: "extreme_event_plugin"
     parameters:
       - &extreme_wind
-        - name: "100u"
-          type: "atlas_field"
-        - name: "100v"
-          type: "atlas_field"
+        - name: "u"
+          type: "ATLAS_FIELD"
+        - name: "v"
+          type: "ATLAS_FIELD"
     core-config:
         aviso_url: "<url/to/aviso/server>"
         notify_endpoint: "/notify/endpoint"
@@ -139,6 +139,9 @@ Once installed, this plugin can easily be run with the [Plume emulator](https://
 ```bash
 bash <exec_bin>/emulate_ee_detection.sh --dev --np=8 --expver="0002" --config-src=<path/to/emulator_config.yml> --plume-cfg=<path/to/plume_config.yml>
 ```
+
+Run `bash <exec_bin>/emulate_ee_detection.sh [--help|-h]` for all the available options.
+The emulator will run in double precision by default, add `--sp` flag for single precision.
 
 # Contributors
 

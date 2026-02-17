@@ -16,6 +16,12 @@ emulator_src=""
 njobs=1
 expver="0000"
 dev=0
+precision="dp"
+
+usage() {
+    echo "Usage: $0 --plume-cfg=<path> [--grib-src=<path> | --config-src=<path>]
+                                       [--expver=<id>] [--np=<n>] [--sp] [--dev]"
+}
 
 echo "Run extreme event detection plugin with emulator :"
 
@@ -36,6 +42,14 @@ while [[ $# -gt 0 ]]; do
         --dev)
             dev=1
             shift
+            ;;
+        --sp)
+            precision="sp"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
             ;;
         --grib-src=*|--config-src=*)
             if [[ -n "$emulator_src" ]]; then
@@ -67,14 +81,16 @@ export PLUME_PLUGIN_DEV=$dev
 # Run with config OR grib source
 if [[ -z "$emulator_src" ]]; then
     echo "Provide either of these options: [--grib-src=<path> | --config-src=<path>]"
+    usage
     exit 1
 fi
 if [[ -z "$plume_config" ]]; then
     echo "--plume-cfg=<path> is missing from the command"
+    usage
     exit 1
 fi
 
-mpirun -np $njobs $exe_dir/nwp_emulator_run.x $emulator_src $plume_config
+mpirun -np $njobs $exe_dir/nwp_emulator_run_${precision}.x $emulator_src $plume_config
 
 echo "Tearing down environment variables..."
 unset CLASS TYPE EXPVER DATE TIME PLUME_PLUGIN_DEV

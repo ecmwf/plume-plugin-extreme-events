@@ -9,6 +9,7 @@
  * does it submit to any jurisdiction.
  */
 #include <sstream>
+#include <cstdlib>
 
 #include "eckit/exception/Exceptions.h"
 #include "eckit/io/EasyCURL.h"
@@ -20,7 +21,12 @@ using namespace eckit;
 namespace ExtremeEventPlugin {
 
 AvisoNotificationHandler::AvisoNotificationHandler(const std::string& base, const std::string& notify) :
-    urlBase_(base), urlNotify_(base + notify) {
+    urlBase_(base),
+    urlNotify_(base + notify),
+    devMode_([&]() {
+        const char* devEnv = std::getenv("PLUME_PLUGIN_DEV");
+        return devEnv ? std::atoi(devEnv) : 0;
+    }()) {
     setSchemaData();
 }
 
@@ -53,9 +59,17 @@ void AvisoNotificationHandler::setSchemaData() {
         for (char& c : upperKey) {
             c = std::toupper(static_cast<unsigned char>(c));
         }
-        const char* schemaValue = std::getenv(upperKey.c_str());
-        if (!schemaValue) {
-            throw BadParameter("Schema key '" + upperKey + "' could not be found in the environment", Here());
+        std::string schemaValue;
+        if (devMode_) {
+            // For convenience to avoid relying on environment variables while developing
+            schemaValue = "dev_" + key;
+        }
+        else {
+            const char* envValue = std::getenv(upperKey.c_str());
+            if (!envValue) {
+                throw BadParameter("Schema key '" + upperKey + "' could not be found in the environment", Here());
+            }
+            schemaValue = envValue;
         }
         schemaData_[key] = schemaValue;
     }
@@ -68,7 +82,7 @@ int AvisoNotificationHandler::send(const std::string payload, const std::vector<
     auto curl = EasyCURL();
     curl.headers(headers);
 
-    if (atoi(std::getenv("PLUME_PLUGIN_DEV"))) {
+    if (devMode_) {
         // For convenience to avoid sending Aviso notifications while developing
         std::cout << urlEncode(polygon) << " " << payload << std::endl;
         return 999;
