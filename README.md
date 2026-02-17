@@ -140,6 +140,9 @@ Once installed, this plugin can easily be run with the [Plume emulator](https://
 bash <exec_bin>/emulate_ee_detection.sh --dev --np=8 --expver="0002" --config-src=<path/to/emulator_config.yml> --plume-cfg=<path/to/plume_config.yml>
 ```
 
+Run `bash <exec_bin>/emulate_ee_detection.sh [--help|-h]` for all the available options.
+The emulator will run in single precision by default, add `--sp` flag for single precision.
+
 # Contributors
 
 Thank you to all the wonderful people who have contributed to the Extreme Event Detection Plume plugin.

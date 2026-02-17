@@ -29,6 +29,7 @@ class AvisoNotificationHandler {
 private:
     std::string urlBase_;    ///< The Aviso server url.
     std::string urlNotify_;  ///< The notification endpoint.
+    bool devMode_;           ///< If true, notifications are not being sent to the Aviso server.
 
     /**
      * @brief The Aviso MARS schema required keys.
