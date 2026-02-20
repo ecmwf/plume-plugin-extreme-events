@@ -132,9 +132,10 @@ public:
      */
     plume::Protocol negotiate() override {
         plume::Protocol protocol;
-        protocol.requireInt("NSTEP");
-        protocol.requireDouble("TSTEP");
-        protocol.requireInt("NFLEVG");
+        protocol.require<int>("NSTEP");
+        protocol.require<int>("WSTEP");
+        protocol.require<double>("TSTEP");
+        protocol.require<int>("NFLEVG");
         return protocol;
     }
 

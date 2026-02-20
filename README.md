@@ -68,10 +68,12 @@ plugins:
     lib: "extreme_event_plugin"
     parameters:
       - &extreme_wind
-        - name: "100u"
+        - name: "u"
           type: "atlas_field"
-        - name: "100v"
+          height: 250
+        - name: "v"
           type: "atlas_field"
+          height: 250
     core-config:
         aviso_url: "<url/to/aviso/server>"
         notify_endpoint: "/notify/endpoint"

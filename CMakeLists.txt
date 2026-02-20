@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ecbuild_find_package( NAME eckit  VERSION  1.28.5   REQUIRED )
 ecbuild_find_package( NAME atlas  VERSION  0.41 REQUIRED )
-ecbuild_find_package( NAME plume  VERSION  0.3.0  REQUIRED )
+ecbuild_find_package( NAME plume  VERSION  0.5.0  REQUIRED )
 
 # The plugin can be built in Single Precision (SP) and/or Double Precision (DP)
 ecbuild_add_option( FEATURE SINGLE_PRECISION
@@ -53,7 +53,7 @@ endif()
 # Tests using the Plume NWP Emulator are optional
 ecbuild_add_option( FEATURE NWP_EMULATOR_TESTS
                     DESCRIPTION "Add plugin tests using the Plume NWP emulator"
-                    DEFAULT ON )
+                    DEFAULT OFF )
 
 ## Plugins
 add_subdirectory(src)

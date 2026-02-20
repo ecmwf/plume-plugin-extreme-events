@@ -8,13 +8,22 @@
  * granted to it by virtue of its status as an intergovernmental organisation nor
  * does it submit to any jurisdiction.
  */
-#include <stdlib.h>
 #include <ctime>
+#include <map>
+#include <stdlib.h>
+#include <vector>
 
+#include "atlas/array.h"
+#include "atlas/field/detail/FieldImpl.h"
+#include "atlas/functionspace/NodeColumns.h"
+#include "atlas/grid.h"
 #include "atlas/library.h"
+#include "atlas/option.h"
 #include "atlas/util/Point.h"
 #include "eckit/config/LocalConfiguration.h"
+#include "eckit/config/YAMLConfiguration.h"
 #include "eckit/testing/Test.h"
+#include "plume/data/ModelData.h"
 
 #include "ee_plugin.h"
 
@@ -59,7 +68,89 @@ CASE("test_aviso_notification") {
         unsetenv(var.first.c_str());
     }
 
-    EXPECT_THROWS_AS(notificationHandler.setSchemaData(), eckit::BadParameter);
+    EXPECT_NO_THROW(notificationHandler.setSchemaData());
+}
+
+CASE("test_setup_skips_missing_params") {
+    eckit::LocalConfiguration event;
+    event.set("name", "extreme_wind");
+    event.set("enabled", true);
+    eckit::LocalConfiguration uParam;
+    uParam.set("name", "u");
+    uParam.set("type", "ATLAS_FIELD");
+    eckit::LocalConfiguration vParam;
+    vParam.set("name", "v");
+    vParam.set("type", "ATLAS_FIELD");
+    std::vector<eckit::LocalConfiguration> reqParams{uParam, vParam};
+    event.set("required_params", reqParams);
+    event.set("instances", std::vector<eckit::LocalConfiguration>{});
+
+    eckit::LocalConfiguration conf;
+    conf.set("healpix_res", 2);
+    conf.set("enable_notification", false);
+    conf.set("aviso_url", "dummy");
+    conf.set("notify_endpoint", "dummy");
+    conf.set("events", std::vector<eckit::LocalConfiguration>{event});
+
+    ExtremeEventPlugin::EEPluginCore eePlugin(conf);
+
+    atlas::Grid grid("O1");
+    atlas::functionspace::NodeColumns fs(grid, atlas::option::halo(0));
+    auto swh = fs.createField<double>(atlas::option::name("swh") | atlas::option::levels(1));
+    plume::data::ModelData data;
+    data.provideParam("swh", &swh);
+    data.createParam("NSTEP", 0);
+    data.createParam("WSTEP", 0);
+    data.createParam("TSTEP", 900.0);
+    data.createParam("NFLEVG", 1);
+
+    eePlugin.grabData(data);
+    EXPECT_NO_THROW(eePlugin.setup());
+    EXPECT_NO_THROW(eePlugin.run());
+}
+
+CASE("test_run_extreme_wave_without_notifications") {
+    eckit::LocalConfiguration event;
+    event.set("name", "extreme_wave");
+    event.set("enabled", true);
+    eckit::LocalConfiguration swhParam;
+    swhParam.set("name", "swh");
+    swhParam.set("type", "ATLAS_FIELD");
+    event.set("required_params", std::vector<eckit::LocalConfiguration>{swhParam});
+
+    eckit::LocalConfiguration instance;
+    instance.set("threshold", 3.5);
+    instance.set("description", "test waves");
+    event.set("instances", std::vector<eckit::LocalConfiguration>{instance});
+
+    eckit::LocalConfiguration conf;
+    conf.set("healpix_res", 2);
+    conf.set("enable_notification", false);
+    conf.set("aviso_url", "dummy");
+    conf.set("notify_endpoint", "dummy");
+    conf.set("events", std::vector<eckit::LocalConfiguration>{event});
+
+    ExtremeEventPlugin::EEPluginCore eePlugin(conf);
+
+    atlas::Grid grid("O1");
+    atlas::functionspace::NodeColumns fs(grid, atlas::option::halo(0));
+    auto swh = fs.createField<double>(atlas::option::name("swh") | atlas::option::levels(1));
+    auto view = atlas::array::make_view<double, 2>(swh);
+    for (atlas::idx_t i = 0; i < view.shape(0); ++i) {
+        view(i, 0) = 4.0;
+    }
+
+    plume::data::ModelData data;
+    data.provideParam("swh", &swh);
+    data.createParam("NSTEP", 1);
+    data.createParam("WSTEP", 0);
+    data.createParam("TSTEP", 900.0);
+    data.createParam("NFLEVG", 1);
+    data.setUpdated({"swh"});
+
+    eePlugin.grabData(data);
+    eePlugin.setup();
+    EXPECT_NO_THROW(eePlugin.run());
 }
 }  // namespace test
 

@@ -25,7 +25,7 @@ ExtremeWave::ExtremeWave(const eckit::LocalConfiguration& config, plume::data::M
     coarseMapping_(coarseMapping),
     missingValue_(static_cast<FIELD_TYPE_REAL>(config.getInt("missing_value", 9999))) {
     // Validate that the required field is swh
-    if (requiredFields_[0] != "swh" || requiredFields_.size() > 1) {
+    if (requiredFields()[0] != "swh" || requiredFields().size() > 1) {
         throw eckit::BadValue("The 'extreme_wave' event requires the significant wave height field", Here());
     }
 
@@ -62,8 +62,8 @@ std::vector<ExtremeEvent::DetectionData> ExtremeWave::detect(plume::data::ModelD
         ee_points.push_back({{}, threshold.description, "swh", "", ""});
     }
 
-    auto fieldSwh = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getAtlasFieldShared("swh"));
-    auto halo     = atlas::array::make_view<int, 1>(modelData.getAtlasFieldShared("swh").functionspace().ghost());
+    auto fieldSwh = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getParam<atlas::Field>("swh"));
+    auto halo     = atlas::array::make_view<int, 1>(modelData.getParam<atlas::Field>("swh").functionspace().ghost());
     for (atlas::idx_t idx = 0; idx < coarseMapping_.size(); idx++) {
         // Skip the halo and missing values (over land)
         if (halo(idx) > 0 || fieldSwh(idx, 0) == missingValue_) {

@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "$#" -lt 3 ]]; then
+  echo "Usage: $0 <config_src> <plume_cfg> <event_name...>" >&2
+  exit 2
+fi
+
+emulator_exe="${NWP_EMULATOR_RUN_BIN:?NWP_EMULATOR_RUN_BIN is not set}"
+config_src="$1"
+plume_cfg="$2"
+shift 2
+
+output_file="$(mktemp)"
+payload_file="$(mktemp)"
+trap 'rm -f "$output_file" "$payload_file"' EXIT
+
+if [[ ! -x "$emulator_exe" ]]; then
+  echo "Emulator executable not found or not executable: $emulator_exe" >&2
+  exit 1
+fi
+
+if ! "$emulator_exe" --config-src="$config_src" --plume-cfg="$plume_cfg" >"$output_file" 2>&1; then
+  echo "Emulator failed. Output:" >&2
+  cat "$output_file" >&2
+  exit 1
+fi
+
+awk 'match($0, /\{.*\}$/) { print substr($0, RSTART, RLENGTH) }' "$output_file" >"$payload_file"
+
+missing=0
+if ! grep -q . "$payload_file"; then
+  echo "No notification payloads captured." >&2
+  missing=1
+fi
+for event in "$@"; do
+  if ! grep -q "$event" "$payload_file"; then
+    echo "Missing event notification for: $event" >&2
+    missing=1
+  fi
+done
+
+grep -n "description" "$payload_file" || true
+
+if [[ "$missing" -ne 0 ]]; then
+  echo "Notification payloads:" >&2
+  cat "$payload_file" >&2
+  echo "Emulator output:" >&2
+  cat "$output_file" >&2
+  exit 1
+fi

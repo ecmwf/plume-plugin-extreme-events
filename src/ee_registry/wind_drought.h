@@ -28,6 +28,8 @@ class WindDrought final : public ExtremeEvent {
 private:
     static const std::string type_;
     std::string description_;
+    std::string levtype_;
+    std::string level_;
 
     unsigned int timeWindow_;
     uint16_t ntimeSteps_;
@@ -57,7 +59,7 @@ public:
     /**
      * @brief Detects wind droughts using the definition below.
      *
-     * This event checks if the 100m wind speed for each grid point remains under a given threshold for a configured
+     * This event checks if the 100m wind speed for each grid point remains under a given threshold for a configured // TODO1: extend to any height
      * time window. If it does, the coarse cell is marked as detected.
      *
      * @param modelData The model data that contains the wind fields to run detection on.

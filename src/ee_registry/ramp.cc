@@ -39,14 +39,20 @@ RampEvent::RampEvent(const eckit::LocalConfiguration& config, plume::data::Model
     }
 
     timeWindow_     = config.getUnsigned("time_window");
-    ntimeSteps_     = std::ceil(timeWindow_ * 60 / modelData.getDouble("TSTEP"));
+    ntimeSteps_     = std::ceil(timeWindow_ * 60 / modelData.getParam<double>("TSTEP"));
     previousValues_ = std::deque<FIELD_TYPE_REAL>(ntimeSteps_ * coarseMapping_.size(), 0);
-
-    std::ostringstream fieldVec;
-    for (size_t i = 0; i < requiredFields_.size() - 1; i++) {
-        fieldVec << requiredFields_[i] << "/";
+    if (heightLevel().has_value()) {
+        levtype_ = "hl";
+        level_   = std::to_string(*heightLevel());
     }
-    fieldVec << requiredFields_[requiredFields_.size() - 1];
+
+    const auto& fields      = requiredFields();
+    const size_t fieldCount = fields.size();
+    std::ostringstream fieldVec;
+    for (size_t i = 0; i + 1 < fieldCount; i++) {
+        fieldVec << fields[i] << "/";
+    }
+    fieldVec << fields[fieldCount - 1];
     fieldNamesStr_ = fieldVec.str();
     if (rampUp_) {
         descriptionUp_ = "Ramp up of " + config.getString("ramp_up_value") + " over " +
@@ -60,35 +66,42 @@ RampEvent::RampEvent(const eckit::LocalConfiguration& config, plume::data::Model
 
 std::vector<ExtremeEvent::DetectionData> RampEvent::detect(plume::data::ModelData& modelData) {
     std::vector<DetectionData> ee_points;
-    std::vector<atlas::array::ArrayView<const FIELD_TYPE_REAL, 2>> fields;
-    for (const auto& field : requiredFields_) {
-        fields.push_back(atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getAtlasFieldShared(field)));
+    const auto& fields = requiredFields();
+    std::vector<atlas::array::ArrayView<const FIELD_TYPE_REAL, 2>> arrayViews;
+    arrayViews.reserve(fields.size());
+    const auto height          = heightLevel();
+    const std::string levelStr = height.has_value() ? std::to_string(*height) : "";
+    for (const auto& fieldName : fields) {
+        auto field = height.has_value() ? modelData.getParam<atlas::Field>(fieldName, levelStr)
+                                            : modelData.getParam<atlas::Field>(fieldName);
+        arrayViews.push_back(atlas::array::make_view<const FIELD_TYPE_REAL, 2>(field));
     }
-    auto halo
-        = atlas::array::make_view<int, 1>(modelData.getAtlasFieldShared(requiredFields_[0]).functionspace().ghost());
+    auto haloField = height.has_value() ? modelData.getParam<atlas::Field>(fields[0], levelStr)
+                                        : modelData.getParam<atlas::Field>(fields[0]);
+    auto halo      = atlas::array::make_view<int, 1>(haloField.functionspace().ghost());
     // 1. Slide the values window with current time step values
     previousValues_.erase(previousValues_.begin() + (ntimeSteps_ - 1) * coarseMapping_.size(), previousValues_.end());
     // reverse inserting element to maintain indices
     for (atlas::idx_t idx = coarseMapping_.size() - 1; idx >= 0; idx--) {
         if (halo(idx) > 0) {
-            previousValues_.push_front(0); // Add values with no effect in the halo
+            previousValues_.push_front(0);  // Add values with no effect in the halo
         }
 
         // If several parameters are given, the magnitude is computed as the value, it is the user's responsibility
         // to ensure this quantity makes sense, and the passed fields are 2D (or run detection on level 1)
-        if (fields.size() > 1) {
+        if (arrayViews.size() > 1) {
             FIELD_TYPE_REAL squareMag = 0;
-            for (const auto& field : fields) {
+            for (const auto& field : arrayViews) {
                 squareMag += field(idx, 0) * field(idx, 0);
             }
             previousValues_.push_front(std::sqrt(squareMag));
         }
         else {
-            previousValues_.push_front(fields[0](idx, 0));
+            previousValues_.push_front(arrayViews[0](idx, 0));
         }
-    }    
+    }
 
-    if (modelData.getInt("NSTEP") < ntimeSteps_) {  // Fill the previous values array but do not run detection yet
+    if (modelData.getParam<int>("NSTEP") < ntimeSteps_) {  // Fill the current step array but do not run detection yet
         return ee_points;
     }
 
@@ -116,8 +129,8 @@ std::vector<ExtremeEvent::DetectionData> RampEvent::detect(plume::data::ModelDat
         }
     }
 
-    ee_points.push_back({{}, descriptionUp_, fieldNamesStr_, "sfc", "0"});
-    ee_points.push_back({{}, descriptionDown_, fieldNamesStr_, "sfc", "0"});
+    ee_points.push_back({{}, descriptionUp_, fieldNamesStr_, levtype_, level_});
+    ee_points.push_back({{}, descriptionDown_, fieldNamesStr_, levtype_, level_});
     for (const auto& [cell, max] : cellMaxima) {
         if (max > rampUpValue_) {
             ee_points[0].detectedCells.insert(cell);

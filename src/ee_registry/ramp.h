@@ -29,6 +29,8 @@ private:
     std::string descriptionUp_;
     std::string descriptionDown_;
     std::string fieldNamesStr_;
+    std::string levtype_ = "sfc";
+    std::string level_ = "0";
 
     unsigned int timeWindow_;
     size_t ntimeSteps_;

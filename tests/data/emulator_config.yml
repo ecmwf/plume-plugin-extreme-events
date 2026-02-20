@@ -3,21 +3,6 @@ emulator:
   grid_identifier: "N80"
   vertical_levels: 5
   fields:
-    100u:
-      levtype: "sfc"
-      apply:
-        step:
-          value: 10.0
-          variation: -2.5
-    100v:
-      levtype: "sfc"
-      apply:
-        vortex_rollup:
-          time_variation: 1.1
-        step:
-          area: [71.5, -25, 34.5, 45]
-          value: 30.0
-          variation: -7.5
     2t:
       levtype: "sfc"
       apply:
@@ -30,24 +15,70 @@ emulator:
         levels:
           "1":
             random:
-              min: 1.0
-              max: 5.0
+              min: 0.0
+              max: 0.0
             step:
               area: [71.5, -25, 34.5, 45] # rectangle represented by NW and SE (lat,lon) coordinates
-              value: 0.0
-              variation: 0.12
+              value: 30.0
+              variation: 0.0
           "2":
             random:
-              min: 1.0
-              max: 5.0
+              min: 0.0
+              max: 0.0
             step:
               area: [-10, 113, -43.7, 155.3]
               value: 0.0
-              variation: 0.12
-    v: "u"
+              variation: 0.0
+          "3":
+            step:
+              area: [71.5, -25, 34.5, 45]
+              value: 40.0
+          "4":
+            step:
+              area: [71.5, -25, 34.5, 45]
+              value: 40.0
+    v:
+      apply:
+        levels:
+          "1":
+            random:
+              min: 0.0
+              max: 0.0
+            vortex_rollup:
+              time_variation: 1.1
+            step:
+              area: [71.5, -25, 34.5, 45]
+              value: 40.0
+              variation: 0.0
+          "2":
+            random:
+              min: 0.0
+              max: 0.0
+            step:
+              area: [-10, 113, -43.7, 155.3]
+              value: 0.0
+              variation: 0.0
+    z:
+      apply:
+        levels:
+          "1":
+            step:
+              value: 3000.0
+          "2":
+            step:
+              value: 2000.0
+          "3":
+            step:
+              value: 1000.0
+          "4":
+            step:
+              value: 500.0
+          "5":
+            step:
+              value: 100.0
     swh:
       levtype: "sfc"
       apply:
         step:
           area: [71.5, -25, 34.5, 45]
-          value: 4.0
+          value: 9.0
