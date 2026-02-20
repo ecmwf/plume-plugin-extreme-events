@@ -32,6 +32,9 @@ private:
     unsigned int timeWindow_;
     size_t ntimeSteps_;
 
+    /// The height at which the event is detected, model level is used if not specified (defaults to 1)
+    unsigned int level_;
+    std::string levtype_;
     FIELD_TYPE_REAL windSpeedCutout_;
     /**
      * This array stores the wind speeds of the original grid points.
@@ -51,7 +54,6 @@ public:
      * The values are stored as doubles or floats to maintain the full precision, but there is a commit with a version
      * of this event using 2-byte integers, as the wind can safely be represented on uint16_t if only two decimals of
      * precision are kept.
-     * @warning Only GRIB1 fields 100u and 100v are used in this event for now. It will be migrated to GRIB2 later on.
      *
      * @param config The configuration of the event, mainly consisting of parameters for cutout speed and time window.
      * @param modelData The model data passed through Plume.
@@ -63,7 +65,8 @@ public:
     /**
      * @brief Detects storms using the definition below.
      *
-     * This event checks if the 100m wind speed exceeds a configured threshold over a configured time window.
+     * This event checks if the wind speed at a configured height or model level exceeds a configured threshold over a
+     * configured time window.
      * Each coarse cell value is the maximum value of the temporal average of its original grid points.
      *
      * @param modelData The model data that contains the wind fields to run detection on.

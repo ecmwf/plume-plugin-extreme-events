@@ -26,17 +26,16 @@
 class ExtremeWind final : public ExtremeEvent {
 private:
     static const std::string type_;
-    static const std::array<std::string, 6> supportedFields_;
+    static const std::array<std::string, 4> supportedFields_;
 
     /**
      * @brief Represents the wind thresholds to run detection on.
      *
      * A description can be provided for communicating results in a human-friendly fashion.
-     * @todo Implement support for height.
      */
     struct Interval {
         double lBound, uBound;
-        int height, modelLevel;
+        unsigned int height, modelLevel;
         std::string u, v, description;
     };
 
@@ -48,8 +47,7 @@ public:
      * @brief Constructs an extreme wind event.
      *
      * The plugin does not validate that the configured fields are indeed representing winds, but it enforces
-     * the use of either the surface fields {10,100}{u,v} or the leveled fields {u,v}.
-     * @warning Detection at given heights when levels are provided is not supported yet.
+     * the use of either the surface fields {10}{u,v} or the leveled fields {u,v} (on height or model levels).
      *
      * @param config The configuration of the event, mainly consisting of parameters for bounds, description, and height
      *        for several instances.

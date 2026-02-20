@@ -21,14 +21,15 @@ This key is `true` by default if omitted.
 This event with name `extreme_wind` detects winds above a specified threshold or within a specified range.
 It scans the fields that are in the `required_params`, computes the wind magnitude from the horizontal and vertical
 components (or only one of them if the other is not offered), and flags the grid points that exceed the threshold or
-fall in the range. The same `extreme_wind` event can be used to detect on several fields or several thresholds, via
+fall in the range. The same `extreme_wind` event can be used to detect on model levels or several thresholds, via
 configuring the `instances` list key. Each element represents a set of detection options: `lower_bound`, `upper_bound`,
-a human-readable `description`, and optionally, if non surface fields are passed, `model_levels`.
+a human-readable `description`, and optionally, if non 2D fields are passed, `model_levels`.
 
 
 > [!NOTE]
-> A `height` option may be added in the future for non surface fields for users who might be interested in detecting
-high winds at a specific height, e.g., wind turbine height.
+> Users can provide a `height` option in the required parameters if they are interested in detecting
+> high winds at a specific height, e.g., wind turbine height. In that case, model levels cannot
+> be passed to the configuration. Separate events must be configured to detect at several heights.
 
 
 ### Configuration examples
@@ -37,7 +38,7 @@ high winds at a specific height, e.g., wind turbine height.
 > Validation is run on the instances when the extreme wind object is constructed. Bad values will throw excecptions.
 
 Things to keep in mind when writing your configuration:
-- ensure your instances have the proper parameters for your field types (`model_levels` is required for non surface fields).
+- ensure your instances have the proper parameters for your field types (`model_levels` is required for 3D fields).
 - ensure the vertical levels you request are not higher than the model levels.
 - if you want to use a threshold and not a range, make sure to input your threshold in `lower_bound` and set the 
 `upper_bound` to a smaller number.
@@ -48,10 +49,12 @@ root of the plugin configuration.
 ```yaml
 parameters:
   - &extreme_wind
-    - name: "100u"
-      type: "atlas_field"
-    - name: "100v"
-      type: "atlas_field"
+    - name: "u"
+      type: "ATLAS_FIELD"
+      height: 100
+    - name: "v"
+      type: "ATLAS_FIELD"
+      height: 100
 ...
 name: "extreme_wind"
 enabled: true
@@ -69,9 +72,9 @@ instances:
 parameters:
   - &extreme_wind
     - name: "u"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
     - name: "v"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
 ...
 name: "extreme_wind"
 required_params: *extreme_wind
@@ -82,40 +85,84 @@ instances:
     description: "Extremely strong wind"
 ```
 
-You can use a combination of surface and non surface fields in your parameters, based on the instances options,
-the extreme wind event will determine which instance should run on which fields.
+Required parameters apply to all instances, so it is not possible to use a combination of 2D and 3D 
+fields, or multiple 2D fields at different heights, in the same `extreme_wind` event, e.g., correct configuration:
+
+```yaml
+parameters:
+  - &extreme_wind
+    - name: "u"
+      type: "ATLAS_FIELD"
+    - name: "v"
+      type: "ATLAS_FIELD"
+  - &100m_extreme_wind
+    - name: "u"
+      type: "ATLAS_FIELD"
+      height: 100
+    - name: "v"
+      type: "ATLAS_FIELD"
+      height: 100
+...
+events:
+  - name: "extreme_wind"
+    required_params: *extreme_wind
+    instances:
+      - lower_bound: 30.0
+        upper_bound: 0.0
+        model_levels: [1, 66, 137]
+  - name: "extreme_wind"
+    enabled: true
+    required_params: *100m_extreme_wind
+    instances:
+      - lower_bound: 25.0
+        upper_bound: 0.0
+```
 
 ## Storm
 
 ### Description
 
-This event with name `storm` uses a minimal definition solely based on 100m wind components to serve as baseline,
+This event with name `storm` uses a minimal definition solely based on wind speed components to serve as baseline,
 but may be refined in the future. Detection is triggered when the wind (1+ grid point in the coarse cell) exceeds a
 given threshold over a specified time window.
 
 This event stores the wind speed for each grid point and each time step in the time window.
 
-The initial implementation of this event makes use of the `100u` and `100v` fields from GRIB 1.
-It will be migrated to GRIB 2 to use `u` and `v` at height level `100` in the future.
+This event uses `u` and `v` fields at any given height level or model level.
 
 ### Configuration examples
 
-Only `100u` and `100v` fields are allowed at the moment. The event requires only two options:
+Only `u` and `v` fields are allowed at the moment, as the detection method relies only on the wind.
+The event requires only two keys, and has an optional one:
 - The wind speed threshold: expressed in m/s, only two decimals of precision are used by the algorithm,
 so anything more precise will be truncated. The algorithm will throw an error if the number provided is negative.
 - The time window: expressed in minutes. If the time window is smaller than the internal model time step,
 the detection will run only on the current time step.
+- The model level: in case no height is provided, the event will rely on a model level being provided.
 
 ```yaml
 parameters:
   - &storm
-    - name: "100u"
-      type: "atlas_field"
-    - name: "100v"
-      type: "atlas_field"
+    - name: "u"
+      type: "ATLAS_FIELD"
+    - name: "v"
+      type: "ATLAS_FIELD"
+  - &100m_storm
+    - name: "u"
+      type: "ATLAS_FIELD"
+      height: 100
+    - name: "v"
+      type: "ATLAS_FIELD"
+      height: 100
 ...
 name: "storm"
 required_params: *storm
+wind_speed_cutout: 20.0
+time_window: 60
+model_level: 137
+...
+name: "storm"
+required_params: *100m_storm
 wind_speed_cutout: 20.0
 time_window: 60
 ```
@@ -146,7 +193,7 @@ represented by the missing value, and should not trigger the detection.
 parameters:
   - &extreme_waves
     - name: "swh"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
 ...
 name: "extreme_wave"
 required_params: *extreme_waves
@@ -168,24 +215,26 @@ from the electricity grid perspective, especially if combined with important clo
 It stores for each grid point the number of time steps where the wind stayed below a given threshold. The counters
 reset whenever the wind (spatial average over the coarse cell) exceeds the threshold.
 
-> [!NOTE]
-> The initial implementation of this event makes use of the `100u` and `100v` fields from GRIB 1.
-It will be migrated to GRIB 2 to use `u` and `v` at height level `100` in the future.
+This event uses `u` and `v` fields at any given height level or model level.
 
 ### Configuration examples
 
-Only `100u` and `100v` fields are allowed at the moment. The event requires only two options:
+The event requires only two options:
 - The wind speed threshold: expressed in m/s.
 - The time window: expressed in minutes. The typical order of magnitude for the time window for this event is hours or
   days, but they must be converted to minutes.
 
+If the 3D wind components are passed, this event also requires a `model_level` key.
+
 ```yaml
 parameters:
   - &wind_drought
-    - name: "100u"
-      type: "atlas_field"
-    - name: "100v"
-      type: "atlas_field"
+    - name: "u"
+      type: "ATLAS_FIELD"
+      height: 100
+    - name: "v"
+      type: "ATLAS_FIELD"
+      height: 100
 ...
 name: "wind_drought"
 required_params: *wind_drought
@@ -203,7 +252,7 @@ over a specified time window.
 
 This event stores the parameter(s) value for each grid point and each time step in the time window.
 In case multiple parameters are passed, their magnitude is computed as stored value. It lies with the user to ensure
-this quantity makes sense.
+this quantity makes sense. All parameters passed should be surface or height levels.
 
 ### Configuration examples
 
@@ -216,13 +265,15 @@ the detection will run only on the current time step.
 ```yaml
 parameters:
   - &windRamp
-    - name: "100u"
-      type: "atlas_field"
-    - name: "100v"
-      type: "atlas_field"
+    - name: "u"
+      type: "ATLAS_FIELD"
+      height: 100
+    - name: "v"
+      type: "ATLAS_FIELD"
+      height: 100
   - &temperatureRamp
     - name: "2t"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
 ...
 - name: "ramp"
   required_params: *windRamp
