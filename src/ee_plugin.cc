@@ -41,13 +41,17 @@ void EEPluginCore::setup() {
             continue;
         }
         // Load only the extreme events that require offered parameters
-        bool hasRequiredParams = true;
-        for (const auto& param : ee.getSubConfigurations("required_params")) {
-            if (!modelData().hasParameter(param.getString("name"))) {
-                hasRequiredParams = false;
-                break;
-            }
-        }
+        const auto& requiredParams = ee.getSubConfigurations("required_params");
+        const bool hasRequiredParams = std::all_of(
+            requiredParams.begin(),
+            requiredParams.end(),
+            [this](const eckit::Configuration& param) {
+                // Any other derivation than height levels is currently not supported
+                const std::string heightStr = param.getString("height", "");
+                const std::string name = param.getString("name");
+                return heightStr.empty() ? modelData().hasParameter(name)
+                                         : modelData().hasParameter(name, heightStr);
+            });
         if (hasRequiredParams) {
             extremeEvents_.push_back(ExtremeEventRegistry::instance().createEvent(ee, modelData(), Point2HPcell_));
             eckit::Log::info() << ee.getString("name") << " ";
@@ -64,9 +68,19 @@ void EEPluginCore::run() {
     std::string elapsedTime = modelStepStr();
     for (auto& ee : extremeEvents_) {
         // Determine whether or not the event should run
-        if (!std::any_of(ee->requiredFields().begin(), ee->requiredFields().end(),
-                         [this](const std::string& name) { return modelData().isUpdated(name); })) {
-            continue;  // A single updated field is enough to allow the detection
+        const auto& requiredParams = ee->requiredParams();
+        const auto& requiredFields = ee->requiredFields();
+        const auto& heightLevel = ee->heightLevel();
+        const bool paramUpdated = std::any_of(requiredParams.begin(), requiredParams.end(),
+                                              [this](const std::string& name) { return modelData().isUpdated(name); });
+        const bool fieldUpdated = std::any_of(
+            requiredFields.begin(), requiredFields.end(),
+            [this, &heightLevel](const std::string& name) {
+                return heightLevel.has_value() ? modelData().isUpdated(name, std::to_string(*heightLevel))
+                                               : modelData().isUpdated(name);
+            });
+        if (!paramUpdated && !fieldUpdated) {
+            continue;  // A single updated field or param is enough to allow the detection
         }
         // Run the detection for each extreme event suite
         auto results = ee->detect(modelData());
@@ -100,15 +114,15 @@ void EEPluginCore::run() {
 void EEPluginCore::setHEALPixMapping() {
     // TODO: Should this plugin handle multiple functionspaces if fields passed are not all on the same mesh?
     // Retrieve the function space from the model data
-    auto fs = modelData().getAtlasFieldShared(modelData().listAvailableParameters("ATLAS_FIELD")[0]).functionspace();
+    auto fs = modelData().getParam<atlas::Field>(modelData().listAvailableParameters("ATLAS_FIELD")[0]).functionspace();
     mapLonLatToHEALPixCell(healpixRes_, fs, Point2HPcell_, HPcell2polygon_);
 }
 
 std::string EEPluginCore::modelStepStr() {
-    if (modelData().getInt("NSTEP") == 0) {
+    if (modelData().getParam<int>("NSTEP") == 0) {
         return "0s";
     }
-    int seconds = static_cast<int>(std::round(modelData().getInt("NSTEP") * modelData().getDouble("TSTEP")));
+    int seconds = static_cast<int>(std::round(modelData().getParam<int>("NSTEP") * modelData().getParam<double>("TSTEP")));
     // Sub-hourly supported time units (except for seconds)
     const std::vector<std::pair<int, std::string>> timeUnits = {{86400, "d"}, {3600, "h"}, {60, "m"}};
     for (const auto& unit : timeUnits) {

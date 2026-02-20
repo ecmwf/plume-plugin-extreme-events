@@ -70,8 +70,10 @@ plugins:
       - &extreme_wind
         - name: "u"
           type: "ATLAS_FIELD"
+          height: 250
         - name: "v"
           type: "ATLAS_FIELD"
+          height: 250
     core-config:
         aviso_url: "<url/to/aviso/server>"
         notify_endpoint: "/notify/endpoint"

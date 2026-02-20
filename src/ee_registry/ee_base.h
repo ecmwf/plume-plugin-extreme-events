@@ -10,6 +10,7 @@
  */
 #ifndef EE_BASE_H
 #define EE_BASE_H
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -25,9 +26,21 @@ class ExtremeEvent {
 private:
     const std::string type_ = "ExtremeEvent";
 
-protected:
-    std::vector<std::string> requiredParams_;
-    std::vector<std::string> requiredFields_;
+    /**
+     * @struct RequiredModelData
+     * @brief A representation of the `required_params` configuration key for validation or retrieval purposes.
+     * 
+     * @note The current implementation of the plugin only supports height levels for wind fields. If this were to
+     * evolve due to Plume field derivation capabilities expanding, this struct and the plugin setup will need to be
+     * refactored.
+     */
+    struct RequiredModelData {
+        std::vector<std::string> requiredParams_;
+        std::vector<std::string> requiredFields_;
+        std::optional<unsigned int> heightLevel_;
+    };
+
+    RequiredModelData requiredModelData_;    
 
 public:
     /// Default constructor.
@@ -45,15 +58,25 @@ public:
      * @param type The type of extreme event.
      */
     ExtremeEvent(const eckit::LocalConfiguration& config, const std::string& type) {
+        std::optional<unsigned int> heightLevel = std::nullopt;
         for (const auto& param : config.getSubConfigurations("required_params")) {
-            if (param.getString("type") == "atlas_field") {
-                requiredFields_.push_back(param.getString("name"));
+            // Spot configuration malformations for height levels at setup time
+            if (heightLevel.has_value() && param.has("height") && *heightLevel != param.getUnsigned("height")) {
+                throw eckit::BadValue("Several heights found for " + config.getString("name") + " event", Here());
+            }
+            if (!heightLevel.has_value() && param.has("height")) {
+                heightLevel = param.getUnsigned("height");
+            }
+            // Keep track of the required fields and parameters for validation and later retrieval during detection
+            if (param.getString("type") == "ATLAS_FIELD") {
+                requiredModelData_.requiredFields_.push_back(param.getString("name"));
             }
             else {
-                requiredParams_.push_back(param.getString("name"));
+                requiredModelData_.requiredParams_.push_back(param.getString("name"));
             }
         }
-        ASSERT_MSG(!requiredFields_.empty(),
+        requiredModelData_.heightLevel_ = heightLevel;
+        ASSERT_MSG(!requiredModelData_.requiredFields_.empty(),
                    "Event '" + type + "' has no configured required Atlas fields, detection will fail.");
     };
 
@@ -90,8 +113,9 @@ public:
     virtual std::vector<DetectionData> detect(plume::data::ModelData& modelData) = 0;
 
     /// Getters
-    const std::vector<std::string>& requiredParams() const { return requiredParams_; }
-    const std::vector<std::string>& requiredFields() const { return requiredFields_; }
+    const std::vector<std::string>& requiredParams() const { return requiredModelData_.requiredParams_; }
+    const std::vector<std::string>& requiredFields() const { return requiredModelData_.requiredFields_; }
+    const std::optional<unsigned int>& heightLevel() const { return requiredModelData_.heightLevel_; }
     virtual const std::string& type() const = 0;
 };
 

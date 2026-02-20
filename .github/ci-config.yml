@@ -7,5 +7,8 @@ dependencies: |
   ecmwf/plume
 dependency_cmake_options: |
   ecmwf/atlas: "-DENABLE_FORTRAN=ON"
+  ecmwf/plume: "-DPLUME_ENABLE_NWP_EMULATOR=ON -DPLUME_ENABLE_NWP_EMULATOR_SINGLE_PRECISION=ON -DPLUME_ENABLE_NWP_EMULATOR_DOUBLE_PRECISION=ON"
+cmake_options: |
+  -DPLUME_PLUGIN_EXTREME_EVENTS_ENABLE_NWP_EMULATOR_TESTS=ON
 dependency_branch: develop
 parallelism_factor: 8

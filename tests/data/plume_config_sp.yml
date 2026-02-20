@@ -4,41 +4,43 @@ plugins:
     parameters:
       - &extreme_wind
         - name: "u"
-          type: "atlas_field"
+          type: "ATLAS_FIELD"
         - name: "v"
-          type: "atlas_field"
-        - name: "100u"
-          type: "atlas_field"
-        - name: "100v"
-          type: "atlas_field"
+          type: "ATLAS_FIELD"
       - &100m_wind
-        - name: "100u"
-          type: "atlas_field"
-        - name: "100v"
-          type: "atlas_field"
+        - name: "u"
+          type: "ATLAS_FIELD"
+          height: 100
+        - name: "v"
+          type: "ATLAS_FIELD"
+          height: 100
       - &waves
         - name: "swh"
-          type: "atlas_field"
+          type: "ATLAS_FIELD"
       - &temperatureRamp
         - name: "2t"
-          type: "atlas_field"
+          type: "ATLAS_FIELD"
     core-config:
         aviso_url: "test"
         notify_endpoint: "/test"
         enable_notification: true
-        healpix_res: 16
+        healpix_res: 8
         events:
           - name: "extreme_wind"
             enabled: true
             required_params: *extreme_wind
             instances:
-              - lower_bound: 25.0
-                upper_bound: 0.0
-                description: "Extremely strong wind"
               - lower_bound: 0.0
                 upper_bound: 0.5
                 model_levels: [1, 2]
                 description: "No wind"
+          - name: "extreme_wind"
+            enabled: true
+            required_params: *100m_wind
+            instances:
+              - lower_bound: 25.0
+                upper_bound: 0.0
+                description: "Extremely strong wind"
           - name: "storm"
             enabled: true
             required_params: *100m_wind
