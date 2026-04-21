@@ -28,6 +28,7 @@ set(EE_PLUGIN_FILES_H
     ${CMAKE_CURRENT_BINARY_DIR}/git_sha1.h    
     notification.h
     healpix_utils.h
+    ee_emulator_layer_writer.h
     ee_plugin.h
     ee_registry/ee_base.h
     ee_registry/ee_registry.h
@@ -42,6 +43,7 @@ set(EE_PLUGIN_FILES_H
 set(EE_PLUGIN_FILES_CC    
     notification.cc
     healpix_utils.cc
+    ee_emulator_layer_writer.cc
     ee_plugin.cc
     ee_plugin_registration.cc
     ee_registry/ee_registry.cc
@@ -59,7 +61,11 @@ set(EE_PLUGIN_SOURCES
 foreach(prec sp dp)
     if (HAVE_EE_PLUGIN_${prec})
         set(EE_PLUGIN_LIB_NAME "extreme_event_plugin_${prec}")
-        message(STATUS "Building plugin ${EE_PLUGIN_LIB_NAME} and definitions: ${PLUGINS_DEFINITIONS_${prec}}")
+        set(EE_PLUGIN_DEFINITIONS ${PLUGINS_DEFINITIONS_${prec}})
+        if (HAVE_EMULATOR_LAYER_OUTPUT)
+            list(APPEND EE_PLUGIN_DEFINITIONS EE_PLUGIN_EMULATOR_LAYER_OUTPUT)
+        endif()
+        message(STATUS "Building plugin ${EE_PLUGIN_LIB_NAME} and definitions: ${EE_PLUGIN_DEFINITIONS}")
 
         ecbuild_add_library(
             TARGET ${EE_PLUGIN_LIB_NAME}
@@ -74,7 +80,7 @@ foreach(prec sp dp)
             PRIVATE_INCLUDES
                 "${MPI_INCLUDE_DIRS}"
             DEFINITIONS
-                ${PLUGINS_DEFINITIONS_${prec}}
+                ${EE_PLUGIN_DEFINITIONS}
             PUBLIC_LIBS
                 atlas
                 eckit

@@ -19,6 +19,10 @@
 #include "notification.h"
 #include "version.h"
 
+#ifdef EE_PLUGIN_EMULATOR_LAYER_OUTPUT
+#include "ee_emulator_layer_writer.h"
+#endif
+
 namespace ExtremeEventPlugin {
 
 /**
@@ -110,6 +114,11 @@ private:
      *          correspond to an actual output step. Data from this step may not be retrievable after the run.
      */
     std::string modelStepStr();
+
+#ifdef EE_PLUGIN_EMULATOR_LAYER_OUTPUT
+    void maybeWriteEmulatorLayer(const std::string& elapsedTime, int stepNumber,
+                                 const std::vector<EEEmulatorLayerEvent>& events);
+#endif
 };
 
 

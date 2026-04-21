@@ -9,10 +9,16 @@
  * does it submit to any jurisdiction.
  */
 #include <cmath>
+#include <cstdlib>
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 
 #include "atlas/field/Field.h"
+#include "eckit/mpi/Comm.h"
 
+#include "ee_emulator_layer_writer.h"
 #include "ee_plugin.h"
 #include "healpix_utils.h"
 
@@ -66,6 +72,10 @@ void EEPluginCore::setup() {
 void EEPluginCore::run() {
     // Determine the elapsed time in the simulation in minutes
     std::string elapsedTime = modelStepStr();
+#ifdef EE_PLUGIN_EMULATOR_LAYER_OUTPUT
+    std::vector<EEEmulatorLayerEvent> emulatorLayerEvents;
+#endif
+
     for (auto& ee : extremeEvents_) {
         // Determine whether or not the event should run
         const auto& requiredParams = ee->requiredParams();
@@ -90,6 +100,20 @@ void EEPluginCore::run() {
                 continue;
             }
             auto ee_polygon_points = cellToPolygons(results[idx].detectedCells, HPcell2polygon_);
+
+#ifdef EE_PLUGIN_EMULATOR_LAYER_OUTPUT
+            if (!ee_polygon_points.empty()) {
+                emulatorLayerEvents.push_back(EEEmulatorLayerEvent{
+                    ee->type(),
+                    results[idx].description,
+                    results[idx].param,
+                    results[idx].levtype,
+                    results[idx].levelist,
+                    ee_polygon_points,
+                });
+            }
+#endif
+
             if (enableNotification_) {
                 // Send notification for each polygon individually if enabled
                 for (auto& polygon : ee_polygon_points) {
@@ -109,7 +133,99 @@ void EEPluginCore::run() {
             }
         }
     }
+
+#ifdef EE_PLUGIN_EMULATOR_LAYER_OUTPUT
+    const int stepNumber = modelData().getParam<int>("NSTEP");
+    maybeWriteEmulatorLayer(elapsedTime, stepNumber, emulatorLayerEvents);
+#endif
 }
+
+#ifdef EE_PLUGIN_EMULATOR_LAYER_OUTPUT
+void EEPluginCore::maybeWriteEmulatorLayer(const std::string& elapsedTime, int stepNumber,
+                                           const std::vector<EEEmulatorLayerEvent>& events) {
+
+    const char* emulatorMode = std::getenv("PLUME_EMULATOR_MODE");
+    if (emulatorMode == nullptr || std::string(emulatorMode) != "1") {
+        return;
+    }
+
+    const char* runTmpDir = std::getenv("PLUME_RUN_TMPDIR");
+    if (runTmpDir == nullptr || std::string(runTmpDir).empty()) {
+        eckit::Log::warning() << "EEPlugin emulator layer output skipped: PLUME_RUN_TMPDIR unset"
+                              << std::endl;
+        return;
+    }
+
+    namespace fs = std::filesystem;
+    const fs::path pluginDir = fs::path(runTmpDir) / "plugin_layers" / "EEPlugin";
+
+    // Each rank writes its events to a temporary per-rank file
+    if (!events.empty()) {
+        const fs::path rankEventFile = pluginDir / ("rank_" + std::to_string(eckit::mpi::comm().rank()) + 
+                                                    "_step_" + std::to_string(stepNumber) + ".tmp");
+        try {
+            EEEmulatorLayerWriter::writeEEPluginLayer(pluginDir, elapsedTime, stepNumber, events, rankEventFile);
+        }
+        catch (const std::exception& ex) {
+            eckit::Log::warning() << "EEPlugin failed to write rank event file: " << ex.what() << std::endl;
+        }
+    }
+
+    // Synchronize: ensure all ranks finished writing
+    eckit::mpi::comm().barrier();
+
+    // Only rank 0 aggregates and writes final consolidated output
+    if (eckit::mpi::comm().rank() == 0) {
+        std::vector<EEEmulatorLayerEvent> aggregatedEvents;
+
+        // Iterate through all rank files and aggregate events
+        for (int r = 0; r < eckit::mpi::comm().size(); ++r) {
+            const fs::path rankFile = pluginDir / ("rank_" + std::to_string(r) + 
+                                                  "_step_" + std::to_string(stepNumber) + ".tmp");
+            if (fs::exists(rankFile)) {
+                try {
+                    auto rankEvents = EEEmulatorLayerWriter::readEEPluginLayer(rankFile);
+                    aggregatedEvents.insert(aggregatedEvents.end(), rankEvents.begin(), rankEvents.end());
+                }
+                catch (const std::exception& ex) {
+                    eckit::Log::warning() << "EEPlugin failed to read rank event file " << rankFile.string() 
+                                         << ": " << ex.what() << std::endl;
+                }
+            }
+        }
+
+        // Write consolidated output
+        if (!aggregatedEvents.empty()) {
+            try {
+                EEEmulatorLayerWriter::writeEEPluginLayer(pluginDir, elapsedTime, stepNumber, aggregatedEvents);
+                eckit::Log::info() << "EEPlugin wrote aggregated emulator event layer step " << stepNumber
+                                  << " to " << pluginDir.string() << std::endl;
+            }
+            catch (const std::exception& ex) {
+                eckit::Log::warning() << "EEPlugin failed to write aggregated emulator event layer: " << ex.what() << std::endl;
+            }
+        }
+
+        // Clean up temporary per-rank files
+        for (int r = 0; r < eckit::mpi::comm().size(); ++r) {
+            const fs::path rankFile = pluginDir / ("rank_" + std::to_string(r) + 
+                                                  "_step_" + std::to_string(stepNumber) + ".tmp");
+            if (fs::exists(rankFile)) {
+                try {
+                    fs::remove(rankFile);
+                }
+                catch (const std::exception& ex) {
+                    eckit::Log::warning() << "EEPlugin failed to remove temporary file " << rankFile.string() 
+                                         << ": " << ex.what() << std::endl;
+                }
+            }
+        }
+    }
+
+    // Synchronize: ensure rank 0 finished cleanup before any rank continues
+    eckit::mpi::comm().barrier();
+}
+#endif
 
 void EEPluginCore::setHEALPixMapping() {
     // TODO: Should this plugin handle multiple functionspaces if fields passed are not all on the same mesh?

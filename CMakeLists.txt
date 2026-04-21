@@ -55,6 +55,10 @@ ecbuild_add_option( FEATURE NWP_EMULATOR_TESTS
                     DESCRIPTION "Add plugin tests using the Plume NWP emulator"
                     DEFAULT OFF )
 
+ecbuild_add_option( FEATURE EMULATOR_LAYER_OUTPUT
+                    DESCRIPTION "Compile emulator-only plugin layer output support"
+                    DEFAULT OFF )
+
 ## Plugins
 add_subdirectory(src)
 
