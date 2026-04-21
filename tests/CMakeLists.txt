@@ -57,6 +57,20 @@ foreach(prec sp dp)
                 eckit
                 plume_plugin
         )
+
+        ecbuild_add_test (
+            TARGET ee_plugin_test_healpix_${prec}
+            SOURCES
+                ../src/healpix_utils.h
+                ../src/healpix_utils.cc
+                test_healpix_utils.cc
+            INCLUDES
+                ${CMAKE_CURRENT_SOURCE_DIR}/../src
+                $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>
+            LIBS
+                eckit
+                atlas
+        )
     endif()
 endforeach()
 
