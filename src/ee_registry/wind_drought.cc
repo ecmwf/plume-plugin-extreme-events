@@ -57,10 +57,10 @@ std::vector<ExtremeEvent::DetectionData> WindDrought::detect(plume::data::ModelD
 
     auto uField = useHeight ? modelData.getParam<atlas::Field>("u", level_) : modelData.getParam<atlas::Field>("u");
     auto vField = useHeight ? modelData.getParam<atlas::Field>("v", level_) : modelData.getParam<atlas::Field>("v");
-    auto arrayU        = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(uField);
-    auto arrayV        = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(vField);
-    auto halo          = atlas::array::make_view<int, 1>(uField.functionspace().ghost());
-    const int levelIdx = useHeight ? std::stoi(level_) - 1 : 0;
+    auto arrayU = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(uField);
+    auto arrayV = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(vField);
+    auto halo   = atlas::array::make_view<int, 1>(uField.functionspace().ghost());
+    const int levelIdx = useHeight ? 0 : std::stoi(level_) - 1;
 
     // 1. Compute spatial wind speed average & update count for each cell
     for (atlas::idx_t idx = 0; idx < coarseMapping_.size(); idx++) {

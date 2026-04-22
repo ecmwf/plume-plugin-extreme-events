@@ -67,15 +67,19 @@ struct ExtremeWindFixture {
         data.createParam("NSTEP", 0);
     }
 
-    void setLevelValues(const std::array<FIELD_TYPE_REAL, 3>& values, int level = 0) {
+    void setLevelValues(const std::array<FIELD_TYPE_REAL, 3>& uValues,
+                        const std::array<FIELD_TYPE_REAL, 3>& vValues, int level = 0) {
         auto setValues = [&](auto& uView, auto& vView, auto mutator) {
             for (atlas::idx_t i = 0; i < uView.shape(0); ++i) {
                 mutator(uView, i, 0, level);
                 mutator(vView, i, 0, level);
             }
-            mutator(uView, 0, values[0], level);
-            mutator(uView, 1, values[1], level);
-            mutator(uView, 2, values[2], level);
+            mutator(uView, 0, uValues[0], level);
+            mutator(uView, 1, uValues[1], level);
+            mutator(uView, 2, uValues[2], level);
+            mutator(vView, 0, vValues[0], level);
+            mutator(vView, 1, vValues[1], level);
+            mutator(vView, 2, vValues[2], level);
         };
 
         auto uView = atlas::array::make_view<FIELD_TYPE_REAL, 2>(u);
@@ -143,7 +147,7 @@ CASE("extreme wind detection on model levels") {
     auto config = extremeWindConfig(18.0, 0.0, std::nullopt, std::vector<int>{1});
     ExtremeWind event(config, fixture.data, fixture.coarseMapping);
 
-    fixture.setLevelValues({10.0, 20.0, 5.0}, 0);
+    fixture.setLevelValues({10.0, 20.0, 5.0}, {5.0, 10.0, 2.5}, 0);
     auto detected = event.detect(fixture.data);
 
     EXPECT_EQUAL(detected.size(), 1);
@@ -159,7 +163,7 @@ CASE("extreme wind detection on height levels") {
     auto config = extremeWindConfig(18.0, 0.0, height, std::nullopt);
     ExtremeWind event(config, fixture.data, fixture.coarseMapping);
 
-    fixture.setLevelValues({10.0, 20.0, 5.0});
+    fixture.setLevelValues({10.0, 20.0, 5.0}, {5.0, 10.0, 2.5});
     auto detected = event.detect(fixture.data);
 
     EXPECT_EQUAL(detected.size(), 1);

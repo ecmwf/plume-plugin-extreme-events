@@ -50,10 +50,10 @@ root of the plugin configuration.
 parameters:
   - &extreme_wind
     - name: "u"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
     - name: "v"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
 ...
 name: "extreme_wind"
@@ -72,9 +72,9 @@ instances:
 parameters:
   - &extreme_wind
     - name: "u"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
     - name: "v"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
 ...
 name: "extreme_wind"
 required_params: *extreme_wind
@@ -92,15 +92,15 @@ fields, or multiple 2D fields at different heights, in the same `extreme_wind` e
 parameters:
   - &extreme_wind
     - name: "u"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
     - name: "v"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
   - &100m_extreme_wind
     - name: "u"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
     - name: "v"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
 ...
 events:
@@ -144,15 +144,15 @@ the detection will run only on the current time step.
 parameters:
   - &storm
     - name: "u"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
     - name: "v"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
   - &100m_storm
     - name: "u"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
     - name: "v"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
 ...
 name: "storm"
@@ -193,7 +193,7 @@ represented by the missing value, and should not trigger the detection.
 parameters:
   - &extreme_waves
     - name: "swh"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
 ...
 name: "extreme_wave"
 required_params: *extreme_waves
@@ -230,10 +230,10 @@ If the 3D wind components are passed, this event also requires a `model_level` k
 parameters:
   - &wind_drought
     - name: "u"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
     - name: "v"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
 ...
 name: "wind_drought"
@@ -266,14 +266,14 @@ the detection will run only on the current time step.
 parameters:
   - &windRamp
     - name: "u"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
     - name: "v"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
       height: 100
   - &temperatureRamp
     - name: "2t"
-      type: "atlas_field"
+      type: "ATLAS_FIELD"
 ...
 - name: "ramp"
   required_params: *windRamp

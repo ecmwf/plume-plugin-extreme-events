@@ -59,7 +59,7 @@ public:
     /**
      * @brief Detects wind droughts using the definition below.
      *
-     * This event checks if the 100m wind speed for each grid point remains under a given threshold for a configured // TODO1: extend to any height
+     * This event checks if the wind speed for each grid point remains under a given threshold for a configured
      * time window. If it does, the coarse cell is marked as detected.
      *
      * @param modelData The model data that contains the wind fields to run detection on.

@@ -10,6 +10,7 @@
  */
 #include <ctime>
 #include <map>
+#include <sstream>
 #include <stdlib.h>
 #include <vector>
 
@@ -61,7 +62,15 @@ CASE("test_aviso_notification") {
     std::string data                        = R"({"hello": "world"})";
     std::vector<atlas::PointLonLat> polygon = {atlas::PointLonLat{250.3, 16.9}, atlas::PointLonLat{247.4, 14.4},
                                                atlas::PointLonLat{253.1, 14.4}, atlas::PointLonLat{250.3, 12.0}};
+    std::ostringstream capturedOutput;
+    std::streambuf* oldCout = std::cout.rdbuf(capturedOutput.rdbuf());
     EXPECT_EQUAL(notificationHandler.send(data, polygon), 999);
+    std::cout.rdbuf(oldCout);
+
+    std::string expectedLog =
+        "test/test?class=dev_class&date=dev_date&expver=dev_expver&time=dev_time&type=dev_type&"
+        "polygon=16.9,250.3,14.4,247.4,14.4,253.1,12,250.3 {\"hello\": \"world\"}\n";
+    EXPECT_EQUAL(capturedOutput.str(), expectedLog);
 
     // Unset environment variables
     for (const auto& var : vars) {
@@ -69,6 +78,9 @@ CASE("test_aviso_notification") {
     }
 
     EXPECT_NO_THROW(notificationHandler.setSchemaData());
+
+    EXPECT_THROWS_AS(ExtremeEventPlugin::AvisoNotificationHandler notificationHandlerBadEnv("test", "/test"),
+                     eckit::BadParameter);
 }
 
 CASE("test_setup_skips_missing_params") {
@@ -134,7 +146,7 @@ CASE("test_run_extreme_wave_without_notifications") {
 
     atlas::Grid grid("O1");
     atlas::functionspace::NodeColumns fs(grid, atlas::option::halo(0));
-    auto swh = fs.createField<double>(atlas::option::name("swh") | atlas::option::levels(1));
+    auto swh  = fs.createField<double>(atlas::option::name("swh") | atlas::option::levels(1));
     auto view = atlas::array::make_view<double, 2>(swh);
     for (atlas::idx_t i = 0; i < view.shape(0); ++i) {
         view(i, 0) = 4.0;

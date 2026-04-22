@@ -76,15 +76,19 @@ struct StormFixture {
     /**
      * @brief Sets the first three values of u and v to the provided values and rest to zero at a given level.
      */
-    void setLevelValues(const std::array<FIELD_TYPE_REAL, 3>& values, int level = 0) {
+    void setLevelValues(const std::array<FIELD_TYPE_REAL, 3>& uValues,
+                        const std::array<FIELD_TYPE_REAL, 3>& vValues, int level = 0) {
         auto setValues = [&](auto& uView, auto& vView, auto mutator) {
             for (atlas::idx_t i = 0; i < uView.shape(0); ++i) {
                 mutator(uView, i, 0, level);
                 mutator(vView, i, 0, level);
             }
-            mutator(uView, 0, values[0], level);
-            mutator(uView, 1, values[1], level);
-            mutator(uView, 2, values[2], level);
+            mutator(uView, 0, uValues[0], level);
+            mutator(uView, 1, uValues[1], level);
+            mutator(uView, 2, uValues[2], level);
+            mutator(vView, 0, vValues[0], level);
+            mutator(vView, 1, vValues[1], level);
+            mutator(vView, 2, vValues[2], level);
         };
 
         auto uView = atlas::array::make_view<FIELD_TYPE_REAL, 2>(u);
@@ -154,12 +158,12 @@ CASE("storm detection on model levels") {
     auto config       = stormConfig(18.0, 10, std::nullopt, modelLevel);
     Storm storm(config, fixture.data, fixture.coarseMapping);
 
-    fixture.setLevelValues({10.0, 20.0, 5.0}, modelLevel - 1);
+    fixture.setLevelValues({10.0, 20.0, 5.0}, {5.0, 10.0, 2.5}, modelLevel - 1);
     fixture.data.updateParam("NSTEP", 1);
     auto first = storm.detect(fixture.data);
     EXPECT(first.empty());
 
-    fixture.setLevelValues({30.0, 10.0, 25.0}, modelLevel - 1);
+    fixture.setLevelValues({30.0, 10.0, 25.0}, {15.0, 5.0, 12.5}, modelLevel - 1);
     fixture.data.updateParam("NSTEP", 2);
     auto second = storm.detect(fixture.data);
 
@@ -176,12 +180,12 @@ CASE("storm detection on height levels") {
     auto config = stormConfig(18.0, 10, height);
     Storm storm(config, fixture.data, fixture.coarseMapping);
 
-    fixture.setLevelValues({10.0, 20.0, 5.0});
+    fixture.setLevelValues({10.0, 20.0, 5.0}, {5.0, 10.0, 2.5});
     fixture.data.updateParam("NSTEP", 1);
     auto first = storm.detect(fixture.data);
     EXPECT(first.empty());
 
-    fixture.setLevelValues({30.0, 10.0, 25.0});
+    fixture.setLevelValues({30.0, 10.0, 25.0}, {15.0, 5.0, 12.5});
     fixture.data.updateParam("NSTEP", 2);
     auto second = storm.detect(fixture.data);
 

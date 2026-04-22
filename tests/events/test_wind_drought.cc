@@ -68,15 +68,19 @@ struct WindDroughtFixture {
         data.createParam("NSTEP", 0);
     }
 
-    void setValues(const std::array<FIELD_TYPE_REAL, 3>& values, int level = 0) {
+    void setValues(const std::array<FIELD_TYPE_REAL, 3>& uValues,
+                   const std::array<FIELD_TYPE_REAL, 3>& vValues, int level = 0) {
         auto setField = [&](auto& uView, auto& vView, auto mutator) {
             for (atlas::idx_t i = 0; i < uView.shape(0); ++i) {
                 mutator(uView, i, 0, level);
                 mutator(vView, i, 0, level);
             }
-            mutator(uView, 0, values[0], level);
-            mutator(uView, 1, values[1], level);
-            mutator(uView, 2, values[2], level);
+            mutator(uView, 0, uValues[0], level);
+            mutator(uView, 1, uValues[1], level);
+            mutator(uView, 2, uValues[2], level);
+            mutator(vView, 0, vValues[0], level);
+            mutator(vView, 1, vValues[1], level);
+            mutator(vView, 2, vValues[2], level);
         };
 
         auto uView = atlas::array::make_view<FIELD_TYPE_REAL, 2>(u);
@@ -129,16 +133,16 @@ CASE("wind drought detection on height levels") {
     auto config = windDroughtConfig(2.0, 10, height);
     WindDrought event(config, fixture.data, fixture.coarseMapping);
 
-    fixture.setValues({1.0, 1.0, 3.0});
+    fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5});
     auto first = event.detect(fixture.data);
     EXPECT_EQUAL(first.size(), 1);
     EXPECT(first[0].detectedCells.empty());
 
-    fixture.setValues({1.0, 1.0, 3.0});
+    fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5});
     auto second = event.detect(fixture.data);
     EXPECT(second[0].detectedCells.empty());
 
-    fixture.setValues({1.0, 1.0, 3.0});
+    fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5});
     auto third        = event.detect(fixture.data);
     const auto& cells = third[0].detectedCells;
     EXPECT(cells.find(1) != cells.end());
@@ -151,16 +155,16 @@ CASE("wind drought detection on model levels") {
     auto config = windDroughtConfig(2.0, 10, std::nullopt, modelLevel);
     WindDrought event(config, fixture.data, fixture.coarseMapping);
 
-    fixture.setValues({1.0, 1.0, 3.0}, modelLevel - 1);
+    fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5}, modelLevel - 1);
     auto first = event.detect(fixture.data);
     EXPECT_EQUAL(first.size(), 1);
     EXPECT(first[0].detectedCells.empty());
 
-    fixture.setValues({1.0, 1.0, 3.0}, modelLevel - 1);
+    fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5}, modelLevel - 1);
     auto second = event.detect(fixture.data);
     EXPECT(second[0].detectedCells.empty());
 
-    fixture.setValues({1.0, 1.0, 3.0}, modelLevel - 1);
+    fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5}, modelLevel - 1);
     auto third        = event.detect(fixture.data);
     const auto& cells = third[0].detectedCells;
     EXPECT(cells.find(1) != cells.end());

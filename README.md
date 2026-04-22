@@ -69,10 +69,10 @@ plugins:
     parameters:
       - &extreme_wind
         - name: "u"
-          type: "atlas_field"
+          type: "ATLAS_FIELD"
           height: 250
         - name: "v"
-          type: "atlas_field"
+          type: "ATLAS_FIELD"
           height: 250
     core-config:
         aviso_url: "<url/to/aviso/server>"
@@ -143,7 +143,7 @@ bash <exec_bin>/emulate_ee_detection.sh --dev --np=8 --expver="0002" --config-sr
 ```
 
 Run `bash <exec_bin>/emulate_ee_detection.sh [--help|-h]` for all the available options.
-The emulator will run in single precision by default, add `--sp` flag for single precision.
+The emulator will run in double precision by default, add `--sp` flag for single precision.
 
 # Contributors
 

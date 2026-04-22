@@ -143,14 +143,14 @@ std::vector<ExtremeEvent::DetectionData> ExtremeWind::detect(plume::data::ModelD
     std::vector<DetectionData> ee_points;
     // Prepare detection outputs
     for (const auto& interval : intervals_) {
-        std::string leveltype = interval.modelLevel > 0 ? "ml" : interval.height > 0 ? "hl" : "sfc";
+        std::string levtype   = interval.modelLevel > 0 ? "ml" : interval.height > 0 ? "hl" : "sfc";
         std::string level     = interval.modelLevel > 0 ? std::to_string(interval.modelLevel)
                                 : interval.height > 0   ? std::to_string(interval.height)
-                                                        : "1";
+                                                        : "0";
         std::string param     = interval.u.empty()   ? interval.v
                                 : interval.v.empty() ? interval.u
                                                      : interval.u + "/" + interval.v;
-        ee_points.push_back({{}, interval.description, param, leveltype, level});
+        ee_points.push_back({{}, interval.description, param, levtype, level});
     }
 
     // Resolve wind fields once (same for all instances)
