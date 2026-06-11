@@ -25,7 +25,9 @@ AvisoNotificationHandler::AvisoNotificationHandler(const std::string& base, cons
     urlNotify_(base + notify),
     devMode_([&]() {
         const char* devEnv = std::getenv("PLUME_PLUGIN_DEV");
-        return devEnv ? std::atoi(devEnv) : 0;
+        if (!devEnv) { return false; }
+        std::string val(devEnv);
+        return val == "true" || val == "1";
     }()) {
     setSchemaData();
 }
