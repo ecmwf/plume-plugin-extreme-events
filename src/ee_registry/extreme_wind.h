@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "eckit/config/LocalConfiguration.h"
-#include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 
 #include "ee_registry.h"
 
@@ -54,7 +54,7 @@ public:
      * @param modelData The model data passed through Plume.
      * @param coarseMapping The mapping to use to coarsen the detection data.
      */
-    ExtremeWind(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+    ExtremeWind(const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
                 const std::vector<int>& coarseMapping);
 
     /**
@@ -66,20 +66,18 @@ public:
      *
      * @return The detection results for each set of options (intervals).
      */
-    std::vector<ExtremeEvent::DetectionData> detect(plume::data::ModelData& modelData) override;
+    std::vector<ExtremeEvent::DetectionData> detect(plume::data::ModelDataView& modelData) override;
 
     /**
      * @brief Returns the type/name of the extreme event as used in the configuration.
      */
-    const std::string& type() const override {
-        return type_;
-    }
+    const std::string& type() const override { return type_; }
 
     /// Register the extreme wind event into the registry so it can be used in the plugin.
     static struct Registrar {
         Registrar() {
             ExtremeEventRegistry::instance().registerEvent(
-                type_, [](const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+                type_, [](const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
                           const std::vector<int>& coarseMapping) {
                     return std::make_unique<ExtremeWind>(config, modelData, coarseMapping);
                 });

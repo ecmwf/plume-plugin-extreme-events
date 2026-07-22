@@ -12,7 +12,7 @@
 #include <string>
 
 #include "eckit/config/LocalConfiguration.h"
-#include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 
 #include "ee_base.h"
 
@@ -24,11 +24,12 @@
 class ExtremeEventRegistry {
 public:
     using ExtremeEventFactory = std::function<std::unique_ptr<ExtremeEvent>(
-        const eckit::LocalConfiguration& config, plume::data::ModelData&, const std::vector<int>& coarseMapping)>;
+        const eckit::LocalConfiguration& config, plume::data::ModelDataView&, const std::vector<int>& coarseMapping)>;
 
     void registerEvent(const std::string& eventName, ExtremeEventFactory factory);
     std::unique_ptr<ExtremeEvent> createEvent(const eckit::LocalConfiguration& config,
-                                              plume::data::ModelData& modelData, const std::vector<int>& coarseMapping);
+                                              plume::data::ModelDataView& modelData,
+                                              const std::vector<int>& coarseMapping);
     static ExtremeEventRegistry& instance();
 
     /// Singletons should not be cloneable.

@@ -19,7 +19,7 @@
 
 const std::string WindDrought::type_ = "wind_drought";
 
-WindDrought::WindDrought(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+WindDrought::WindDrought(const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
                          const std::vector<int>& coarseMapping) :
     ExtremeEvent(config, type_), coarseMapping_(coarseMapping) {
 
@@ -51,7 +51,7 @@ WindDrought::WindDrought(const eckit::LocalConfiguration& config, plume::data::M
                    config.getString("time_window") + "minutes at " + levelStr + ")";
 }
 
-std::vector<ExtremeEvent::DetectionData> WindDrought::detect(plume::data::ModelData& modelData) {
+std::vector<ExtremeEvent::DetectionData> WindDrought::detect(plume::data::ModelDataView& modelData) {
     std::vector<DetectionData> ee_points;
     const bool useHeight = levtype_ == "hl";
 

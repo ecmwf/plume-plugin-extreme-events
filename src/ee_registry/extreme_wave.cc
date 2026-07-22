@@ -19,7 +19,7 @@
 
 const std::string ExtremeWave::type_ = "extreme_wave";
 
-ExtremeWave::ExtremeWave(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+ExtremeWave::ExtremeWave(const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
                          const std::vector<int>& coarseMapping) :
     ExtremeEvent(config, type_),
     coarseMapping_(coarseMapping),
@@ -55,7 +55,7 @@ ExtremeWave::ExtremeWave(const eckit::LocalConfiguration& config, plume::data::M
               [](const Threshold& a, const Threshold& b) { return a.value > b.value; });
 }
 
-std::vector<ExtremeEvent::DetectionData> ExtremeWave::detect(plume::data::ModelData& modelData) {
+std::vector<ExtremeEvent::DetectionData> ExtremeWave::detect(plume::data::ModelDataView& modelData) {
     std::vector<DetectionData> ee_points;
     for (const auto& threshold : thresholds_) {
         // Wave fields are 2D but level or levtype are not necessary to retrieve them

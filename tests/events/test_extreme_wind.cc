@@ -20,7 +20,9 @@
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
 #include "eckit/testing/Test.h"
+
 #include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 #include "plume/data/ParameterValue.h"
 
 #include "ee_registry/extreme_wind.h"
@@ -32,6 +34,13 @@ namespace {
 
 struct ExtremeWindFixture {
     plume::data::ModelData data;
+    plume::data::ModelDataView& modelDataView() {
+        if (!view_) {
+            view_.emplace(data);
+        }
+        return *view_;
+    }
+    std::optional<plume::data::ModelDataView> view_;
     atlas::Grid grid;
     atlas::functionspace::NodeColumns fs;
     std::optional<std::string> height;
@@ -67,8 +76,8 @@ struct ExtremeWindFixture {
         data.createParam("NSTEP", 0);
     }
 
-    void setLevelValues(const std::array<FIELD_TYPE_REAL, 3>& uValues,
-                        const std::array<FIELD_TYPE_REAL, 3>& vValues, int level = 0) {
+    void setLevelValues(const std::array<FIELD_TYPE_REAL, 3>& uValues, const std::array<FIELD_TYPE_REAL, 3>& vValues,
+                        int level = 0) {
         auto setValues = [&](auto& uView, auto& vView, auto mutator) {
             for (atlas::idx_t i = 0; i < uView.shape(0); ++i) {
                 mutator(uView, i, 0, level);
@@ -129,26 +138,25 @@ namespace test {
 CASE("extreme wind rejects unsupported fields") {
     ExtremeWindFixture fixture;
     auto config       = extremeWindConfig(10.0, 0.0);
-    std::string uPath =
-        std::string("required_params") + config.separator() + "0" + config.separator() + "name";
+    std::string uPath = std::string("required_params") + config.separator() + "0" + config.separator() + "name";
     config.set(uPath, "bad_field");
 
-    EXPECT_THROWS_AS(ExtremeWind(config, fixture.data, fixture.coarseMapping), eckit::BadValue);
+    EXPECT_THROWS_AS(ExtremeWind(config, fixture.modelDataView(), fixture.coarseMapping), eckit::BadValue);
 }
 
 CASE("extreme wind rejects model level above NFLEVG") {
     ExtremeWindFixture fixture(1);
     auto config = extremeWindConfig(20.0, 0.0, std::nullopt, std::vector<int>{2});
-    EXPECT_THROWS_AS(ExtremeWind(config, fixture.data, fixture.coarseMapping), eckit::BadValue);
+    EXPECT_THROWS_AS(ExtremeWind(config, fixture.modelDataView(), fixture.coarseMapping), eckit::BadValue);
 }
 
 CASE("extreme wind detection on model levels") {
     ExtremeWindFixture fixture(2);
     auto config = extremeWindConfig(18.0, 0.0, std::nullopt, std::vector<int>{1});
-    ExtremeWind event(config, fixture.data, fixture.coarseMapping);
+    ExtremeWind event(config, fixture.modelDataView(), fixture.coarseMapping);
 
     fixture.setLevelValues({10.0, 20.0, 5.0}, {5.0, 10.0, 2.5}, 0);
-    auto detected = event.detect(fixture.data);
+    auto detected = event.detect(fixture.modelDataView());
 
     EXPECT_EQUAL(detected.size(), 1);
     const auto& cells = detected[0].detectedCells;
@@ -161,10 +169,10 @@ CASE("extreme wind detection on height levels") {
     std::string height = "100";
     ExtremeWindFixture fixture(0, height);
     auto config = extremeWindConfig(18.0, 0.0, height, std::nullopt);
-    ExtremeWind event(config, fixture.data, fixture.coarseMapping);
+    ExtremeWind event(config, fixture.modelDataView(), fixture.coarseMapping);
 
     fixture.setLevelValues({10.0, 20.0, 5.0}, {5.0, 10.0, 2.5});
-    auto detected = event.detect(fixture.data);
+    auto detected = event.detect(fixture.modelDataView());
 
     EXPECT_EQUAL(detected.size(), 1);
     const auto& cells = detected[0].detectedCells;

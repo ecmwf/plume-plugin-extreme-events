@@ -18,7 +18,7 @@ void ExtremeEventRegistry::registerEvent(const std::string& eventName, ExtremeEv
 }
 
 std::unique_ptr<ExtremeEvent> ExtremeEventRegistry::createEvent(const eckit::LocalConfiguration& config,
-                                                                plume::data::ModelData& modelData,
+                                                                plume::data::ModelDataView& modelData,
                                                                 const std::vector<int>& coarseMapping) {
     auto it = registry.find(config.getString("name"));
     ASSERT_MSG(it != registry.end(),

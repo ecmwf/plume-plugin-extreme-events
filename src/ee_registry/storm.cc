@@ -23,7 +23,7 @@
 
 const std::string Storm::type_ = "storm";
 
-Storm::Storm(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+Storm::Storm(const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
              const std::vector<int>& coarseMapping) :
     ExtremeEvent(config, type_), coarseMapping_(coarseMapping) {
     const auto& fields = requiredFields();
@@ -54,7 +54,7 @@ Storm::Storm(const eckit::LocalConfiguration& config, plume::data::ModelData& mo
                    config.getString("wind_speed_cutout") + "m/s at " + levelString + ")";
 }
 
-std::vector<ExtremeEvent::DetectionData> Storm::detect(plume::data::ModelData& modelData) {
+std::vector<ExtremeEvent::DetectionData> Storm::detect(plume::data::ModelDataView& modelData) {
     std::vector<DetectionData> ee_points;
 
     // 1. Slide the wind speeds window with current time step values, support for both ml (3D) and hl (2D)
@@ -74,8 +74,8 @@ std::vector<ExtremeEvent::DetectionData> Storm::detect(plume::data::ModelData& m
 
     if (levtype_ == "ml") {
         auto halo = atlas::array::make_view<int, 1>(modelData.getParam<atlas::Field>("u").functionspace().ghost());
-        auto u = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getParam<atlas::Field>("u"));
-        auto v = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getParam<atlas::Field>("v"));
+        auto u    = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getParam<atlas::Field>("u"));
+        auto v    = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(modelData.getParam<atlas::Field>("v"));
         // Model levels are 1-indexed in the input files but 0-indexed in the code, hence the -1
         slideWindSpeeds(u, v, halo, [this](const auto& field, atlas::idx_t idx) { return field(idx, level_ - 1); });
     }
@@ -83,9 +83,9 @@ std::vector<ExtremeEvent::DetectionData> Storm::detect(plume::data::ModelData& m
         // (wind at) height levels are 2D fields (3D fields with a single level owned by Plume)
         auto uField = modelData.getParam<atlas::Field>("u", std::to_string(level_));
         auto vField = modelData.getParam<atlas::Field>("v", std::to_string(level_));
-        auto halo = atlas::array::make_view<int, 1>(uField.functionspace().ghost());
-        auto u = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(uField);
-        auto v = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(vField);
+        auto halo   = atlas::array::make_view<int, 1>(uField.functionspace().ghost());
+        auto u      = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(uField);
+        auto v      = atlas::array::make_view<const FIELD_TYPE_REAL, 2>(vField);
         slideWindSpeeds(u, v, halo, [this](const auto& field, atlas::idx_t idx) { return field(idx, 0); });
     }
     // Fill the wind speed array but do not run detection yet

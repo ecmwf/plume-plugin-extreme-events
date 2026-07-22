@@ -20,7 +20,9 @@
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
 #include "eckit/testing/Test.h"
+
 #include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 #include "plume/data/ParameterValue.h"
 
 #include "ee_registry/storm.h"
@@ -35,6 +37,13 @@ namespace {
  */
 struct StormFixture {
     plume::data::ModelData data;
+    plume::data::ModelDataView& modelDataView() {
+        if (!view_) {
+            view_.emplace(data);
+        }
+        return *view_;
+    }
+    std::optional<plume::data::ModelDataView> view_;
     atlas::Grid grid;
     atlas::functionspace::NodeColumns fs;
     std::optional<std::string> height;
@@ -76,8 +85,8 @@ struct StormFixture {
     /**
      * @brief Sets the first three values of u and v to the provided values and rest to zero at a given level.
      */
-    void setLevelValues(const std::array<FIELD_TYPE_REAL, 3>& uValues,
-                        const std::array<FIELD_TYPE_REAL, 3>& vValues, int level = 0) {
+    void setLevelValues(const std::array<FIELD_TYPE_REAL, 3>& uValues, const std::array<FIELD_TYPE_REAL, 3>& vValues,
+                        int level = 0) {
         auto setValues = [&](auto& uView, auto& vView, auto mutator) {
             for (atlas::idx_t i = 0; i < uView.shape(0); ++i) {
                 mutator(uView, i, 0, level);
@@ -137,35 +146,35 @@ CASE("storm setup rejects missing wind fields") {
     auto config       = stormConfig(20.0, 10, std::nullopt, 1);
     std::string vPath = std::string("required_params") + config.separator() + "1" + config.separator() + "name";
     config.set(vPath, "not_v");
-    EXPECT_THROWS_AS(Storm(config, fixture.data, fixture.coarseMapping), eckit::BadValue);
+    EXPECT_THROWS_AS(Storm(config, fixture.modelDataView(), fixture.coarseMapping), eckit::BadValue);
 }
 
 CASE("storm setup rejects negative cutout") {
     StormFixture fixture;
     auto config = stormConfig(-1.0, 10, std::nullopt, 1);
-    EXPECT_THROWS_AS(Storm(config, fixture.data, fixture.coarseMapping), eckit::BadValue);
+    EXPECT_THROWS_AS(Storm(config, fixture.modelDataView(), fixture.coarseMapping), eckit::BadValue);
 }
 
 CASE("storm setup rejects model level above NFLEVG") {
     StormFixture fixture;
     auto config = stormConfig(20.0, 10, std::nullopt, 2);
-    EXPECT_THROWS_AS(Storm(config, fixture.data, fixture.coarseMapping), eckit::BadValue);
+    EXPECT_THROWS_AS(Storm(config, fixture.modelDataView(), fixture.coarseMapping), eckit::BadValue);
 }
 
 CASE("storm detection on model levels") {
     StormFixture fixture;
     size_t modelLevel = 1;
     auto config       = stormConfig(18.0, 10, std::nullopt, modelLevel);
-    Storm storm(config, fixture.data, fixture.coarseMapping);
+    Storm storm(config, fixture.modelDataView(), fixture.coarseMapping);
 
     fixture.setLevelValues({10.0, 20.0, 5.0}, {5.0, 10.0, 2.5}, modelLevel - 1);
     fixture.data.updateParam("NSTEP", 1);
-    auto first = storm.detect(fixture.data);
+    auto first = storm.detect(fixture.modelDataView());
     EXPECT(first.empty());
 
     fixture.setLevelValues({30.0, 10.0, 25.0}, {15.0, 5.0, 12.5}, modelLevel - 1);
     fixture.data.updateParam("NSTEP", 2);
-    auto second = storm.detect(fixture.data);
+    auto second = storm.detect(fixture.modelDataView());
 
     EXPECT_EQUAL(second.size(), 1);
     const auto& detected = second[0].detectedCells;
@@ -178,16 +187,16 @@ CASE("storm detection on height levels") {
     std::string height = "10";
     StormFixture fixture(0, height);
     auto config = stormConfig(18.0, 10, height);
-    Storm storm(config, fixture.data, fixture.coarseMapping);
+    Storm storm(config, fixture.modelDataView(), fixture.coarseMapping);
 
     fixture.setLevelValues({10.0, 20.0, 5.0}, {5.0, 10.0, 2.5});
     fixture.data.updateParam("NSTEP", 1);
-    auto first = storm.detect(fixture.data);
+    auto first = storm.detect(fixture.modelDataView());
     EXPECT(first.empty());
 
     fixture.setLevelValues({30.0, 10.0, 25.0}, {15.0, 5.0, 12.5});
     fixture.data.updateParam("NSTEP", 2);
-    auto second = storm.detect(fixture.data);
+    auto second = storm.detect(fixture.modelDataView());
 
     EXPECT_EQUAL(second.size(), 1);
     const auto& detected = second[0].detectedCells;

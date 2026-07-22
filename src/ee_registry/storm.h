@@ -14,7 +14,7 @@
 #include <string>
 
 #include "eckit/config/LocalConfiguration.h"
-#include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 
 #include "ee_registry.h"
 
@@ -49,7 +49,7 @@ private:
 public:
     /**
      * @brief Constructs a storm event.
-     * 
+     *
      * This event stores the wind speed for a certain number of time steps as its detection is based on temporal trends.
      * The values are stored as doubles or floats to maintain the full precision, but there is a commit with a version
      * of this event using 2-byte integers, as the wind can safely be represented on uint16_t if only two decimals of
@@ -59,7 +59,7 @@ public:
      * @param modelData The model data passed through Plume.
      * @param coarseMapping The mapping to use to coarsen the detection data.
      */
-    Storm(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+    Storm(const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
           const std::vector<int>& coarseMapping);
 
     /**
@@ -74,20 +74,18 @@ public:
      * @return The detection result.
      *         n.b.: single element as the event allows to configure a single time window and wind speed cutout.
      */
-    std::vector<ExtremeEvent::DetectionData> detect(plume::data::ModelData& modelData) override;
+    std::vector<ExtremeEvent::DetectionData> detect(plume::data::ModelDataView& modelData) override;
 
     /**
      * @brief Returns the type/name of the extreme event as used in the configuration.
      */
-    const std::string& type() const override {
-        return type_;
-    }
+    const std::string& type() const override { return type_; }
 
     /// Register the storm event into the registry so it can be used in the plugin.
     static struct Registrar {
         Registrar() {
             ExtremeEventRegistry::instance().registerEvent(
-                type_, [](const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+                type_, [](const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
                           const std::vector<int>& coarseMapping) {
                     return std::make_unique<Storm>(config, modelData, coarseMapping);
                 });

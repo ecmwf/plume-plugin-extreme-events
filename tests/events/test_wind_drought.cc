@@ -20,7 +20,9 @@
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
 #include "eckit/testing/Test.h"
+
 #include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 #include "plume/data/ParameterValue.h"
 
 #include "ee_registry/wind_drought.h"
@@ -32,6 +34,13 @@ namespace {
 
 struct WindDroughtFixture {
     plume::data::ModelData data;
+    plume::data::ModelDataView& modelDataView() {
+        if (!view_) {
+            view_.emplace(data);
+        }
+        return *view_;
+    }
+    std::optional<plume::data::ModelDataView> view_;
     atlas::Grid grid;
     atlas::functionspace::NodeColumns fs;
     std::optional<std::string> height;
@@ -68,8 +77,8 @@ struct WindDroughtFixture {
         data.createParam("NSTEP", 0);
     }
 
-    void setValues(const std::array<FIELD_TYPE_REAL, 3>& uValues,
-                   const std::array<FIELD_TYPE_REAL, 3>& vValues, int level = 0) {
+    void setValues(const std::array<FIELD_TYPE_REAL, 3>& uValues, const std::array<FIELD_TYPE_REAL, 3>& vValues,
+                   int level = 0) {
         auto setField = [&](auto& uView, auto& vView, auto mutator) {
             for (atlas::idx_t i = 0; i < uView.shape(0); ++i) {
                 mutator(uView, i, 0, level);
@@ -124,26 +133,26 @@ namespace test {
 CASE("wind drought setup rejects negative cutout") {
     WindDroughtFixture fixture(1, std::string("1"));
     auto config = windDroughtConfig(-1.0, 10, std::string("1"));
-    EXPECT_THROWS_AS(WindDrought(config, fixture.data, fixture.coarseMapping), eckit::BadValue);
+    EXPECT_THROWS_AS(WindDrought(config, fixture.modelDataView(), fixture.coarseMapping), eckit::BadValue);
 }
 
 CASE("wind drought detection on height levels") {
     std::string height = "1";
     WindDroughtFixture fixture(1, height);
     auto config = windDroughtConfig(2.0, 10, height);
-    WindDrought event(config, fixture.data, fixture.coarseMapping);
+    WindDrought event(config, fixture.modelDataView(), fixture.coarseMapping);
 
     fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5});
-    auto first = event.detect(fixture.data);
+    auto first = event.detect(fixture.modelDataView());
     EXPECT_EQUAL(first.size(), 1);
     EXPECT(first[0].detectedCells.empty());
 
     fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5});
-    auto second = event.detect(fixture.data);
+    auto second = event.detect(fixture.modelDataView());
     EXPECT(second[0].detectedCells.empty());
 
     fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5});
-    auto third        = event.detect(fixture.data);
+    auto third        = event.detect(fixture.modelDataView());
     const auto& cells = third[0].detectedCells;
     EXPECT(cells.find(1) != cells.end());
     EXPECT(cells.find(2) == cells.end());
@@ -153,19 +162,19 @@ CASE("wind drought detection on model levels") {
     size_t modelLevel = 1;
     WindDroughtFixture fixture(2);
     auto config = windDroughtConfig(2.0, 10, std::nullopt, modelLevel);
-    WindDrought event(config, fixture.data, fixture.coarseMapping);
+    WindDrought event(config, fixture.modelDataView(), fixture.coarseMapping);
 
     fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5}, modelLevel - 1);
-    auto first = event.detect(fixture.data);
+    auto first = event.detect(fixture.modelDataView());
     EXPECT_EQUAL(first.size(), 1);
     EXPECT(first[0].detectedCells.empty());
 
     fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5}, modelLevel - 1);
-    auto second = event.detect(fixture.data);
+    auto second = event.detect(fixture.modelDataView());
     EXPECT(second[0].detectedCells.empty());
 
     fixture.setValues({1.0, 1.0, 3.0}, {0.5, 0.5, 1.5}, modelLevel - 1);
-    auto third        = event.detect(fixture.data);
+    auto third        = event.detect(fixture.modelDataView());
     const auto& cells = third[0].detectedCells;
     EXPECT(cells.find(1) != cells.end());
     EXPECT(cells.find(2) == cells.end());

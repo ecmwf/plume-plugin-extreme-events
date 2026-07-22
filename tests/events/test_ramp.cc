@@ -20,7 +20,9 @@
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
 #include "eckit/testing/Test.h"
+
 #include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 #include "plume/data/ParameterValue.h"
 
 #include "ee_registry/ramp.h"
@@ -32,6 +34,13 @@ namespace {
 
 struct RampFixture {
     plume::data::ModelData data;
+    plume::data::ModelDataView& modelDataView() {
+        if (!view_) {
+            view_.emplace(data);
+        }
+        return *view_;
+    }
+    std::optional<plume::data::ModelDataView> view_;
     atlas::Grid grid;
     atlas::functionspace::NodeColumns fs;
     atlas::Field field;
@@ -94,28 +103,28 @@ CASE("ramp setup rejects missing thresholds") {
     param.set("type", "ATLAS_FIELD");
     config.set("required_params", std::vector<eckit::LocalConfiguration>{param});
 
-    EXPECT_THROWS_AS(RampEvent(config, fixture.data, fixture.coarseMapping), eckit::BadValue);
+    EXPECT_THROWS_AS(RampEvent(config, fixture.modelDataView(), fixture.coarseMapping), eckit::BadValue);
 }
 
 CASE("ramp setup rejects negative thresholds") {
     RampFixture fixture;
     auto config = rampConfig(-1.0, std::nullopt, 10);
-    EXPECT_THROWS_AS(RampEvent(config, fixture.data, fixture.coarseMapping), eckit::BadValue);
+    EXPECT_THROWS_AS(RampEvent(config, fixture.modelDataView(), fixture.coarseMapping), eckit::BadValue);
 }
 
 CASE("ramp detection for up and down") {
     RampFixture fixture;
     auto config = rampConfig(10.0, 8.0, 10);
-    RampEvent event(config, fixture.data, fixture.coarseMapping);
+    RampEvent event(config, fixture.modelDataView(), fixture.coarseMapping);
 
     fixture.setValues({10.0, 10.0, 10.0});
     fixture.data.updateParam("NSTEP", 1);
-    auto first = event.detect(fixture.data);
+    auto first = event.detect(fixture.modelDataView());
     EXPECT(first.empty());
 
     fixture.setValues({25.0, 5.0, 0.0});
     fixture.data.updateParam("NSTEP", 2);
-    auto second = event.detect(fixture.data);
+    auto second = event.detect(fixture.modelDataView());
 
     EXPECT_EQUAL(second.size(), 2);
     const auto& rampUp   = second[0].detectedCells;

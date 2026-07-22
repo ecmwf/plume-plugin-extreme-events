@@ -22,7 +22,7 @@
 const std::string ExtremeWind::type_                           = "extreme_wind";
 const std::array<std::string, 4> ExtremeWind::supportedFields_ = {"10u", "10v", "u", "v"};
 
-ExtremeWind::ExtremeWind(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+ExtremeWind::ExtremeWind(const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
                          const std::vector<int>& coarseMapping) :
     ExtremeEvent(config, type_), coarseMapping_(coarseMapping) {
     // Validate configuration fields
@@ -139,17 +139,17 @@ ExtremeWind::ExtremeWind(const eckit::LocalConfiguration& config, plume::data::M
     }
 }
 
-std::vector<ExtremeEvent::DetectionData> ExtremeWind::detect(plume::data::ModelData& modelData) {
+std::vector<ExtremeEvent::DetectionData> ExtremeWind::detect(plume::data::ModelDataView& modelData) {
     std::vector<DetectionData> ee_points;
     // Prepare detection outputs
     for (const auto& interval : intervals_) {
-        std::string levtype   = interval.modelLevel > 0 ? "ml" : interval.height > 0 ? "hl" : "sfc";
-        std::string level     = interval.modelLevel > 0 ? std::to_string(interval.modelLevel)
-                                : interval.height > 0   ? std::to_string(interval.height)
-                                                        : "0";
-        std::string param     = interval.u.empty()   ? interval.v
-                                : interval.v.empty() ? interval.u
-                                                     : interval.u + "/" + interval.v;
+        std::string levtype = interval.modelLevel > 0 ? "ml" : interval.height > 0 ? "hl" : "sfc";
+        std::string level   = interval.modelLevel > 0 ? std::to_string(interval.modelLevel)
+                              : interval.height > 0   ? std::to_string(interval.height)
+                                                      : "0";
+        std::string param   = interval.u.empty()   ? interval.v
+                              : interval.v.empty() ? interval.u
+                                                   : interval.u + "/" + interval.v;
         ee_points.push_back({{}, interval.description, param, levtype, level});
     }
 

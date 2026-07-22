@@ -9,6 +9,7 @@
  * does it submit to any jurisdiction.
  */
 #include <array>
+#include <optional>
 #include <vector>
 
 #include "atlas/array.h"
@@ -19,7 +20,9 @@
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
 #include "eckit/testing/Test.h"
+
 #include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 #include "plume/data/ParameterValue.h"
 
 #include "ee_registry/extreme_wave.h"
@@ -31,6 +34,13 @@ namespace {
 
 struct ExtremeWaveFixture {
     plume::data::ModelData data;
+    plume::data::ModelDataView& modelDataView() {
+        if (!view_) {
+            view_.emplace(data);
+        }
+        return *view_;
+    }
+    std::optional<plume::data::ModelDataView> view_;
     atlas::Grid grid;
     atlas::functionspace::NodeColumns fs;
     atlas::Field swh;
@@ -91,20 +101,19 @@ namespace test {
 CASE("extreme wave rejects non swh field") {
     ExtremeWaveFixture fixture;
     auto config         = extremeWaveConfig({2.0});
-    std::string swhPath =
-        std::string("required_params") + config.separator() + "0" + config.separator() + "name";
+    std::string swhPath = std::string("required_params") + config.separator() + "0" + config.separator() + "name";
     config.set(swhPath, "u");
 
-    EXPECT_THROWS_AS(ExtremeWave(config, fixture.data, fixture.coarseMapping), eckit::BadValue);
+    EXPECT_THROWS_AS(ExtremeWave(config, fixture.modelDataView(), fixture.coarseMapping), eckit::BadValue);
 }
 
 CASE("extreme wave detection respects thresholds and missing values") {
     ExtremeWaveFixture fixture;
     auto config = extremeWaveConfig({8.0, 3.5}, 9999);
-    ExtremeWave event(config, fixture.data, fixture.coarseMapping);
+    ExtremeWave event(config, fixture.modelDataView(), fixture.coarseMapping);
 
     fixture.setValues({9999.0, 5.0, 9.0});
-    auto detected = event.detect(fixture.data);
+    auto detected = event.detect(fixture.modelDataView());
 
     EXPECT_EQUAL(detected.size(), 2);
     const auto& high = detected[0].detectedCells;

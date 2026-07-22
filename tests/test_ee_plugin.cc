@@ -25,6 +25,7 @@
 #include "eckit/config/YAMLConfiguration.h"
 #include "eckit/testing/Test.h"
 #include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 
 #include "ee_plugin.h"
 
@@ -116,7 +117,7 @@ CASE("test_setup_skips_missing_params") {
     data.createParam("TSTEP", 900.0);
     data.createParam("NFLEVG", 1);
 
-    eePlugin.grabData(data);
+    eePlugin.grabData(plume::data::ModelDataView{data});
     EXPECT_NO_THROW(eePlugin.setup());
     EXPECT_NO_THROW(eePlugin.run());
 }
@@ -160,7 +161,7 @@ CASE("test_run_extreme_wave_without_notifications") {
     data.createParam("NFLEVG", 1);
     data.setUpdated({"swh"});
 
-    eePlugin.grabData(data);
+    eePlugin.grabData(plume::data::ModelDataView{data});
     eePlugin.setup();
     EXPECT_NO_THROW(eePlugin.run());
 }

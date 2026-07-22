@@ -21,7 +21,7 @@
 
 const std::string RampEvent::type_ = "ramp";
 
-RampEvent::RampEvent(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+RampEvent::RampEvent(const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
                      const std::vector<int>& coarseMapping) :
     ExtremeEvent(config, type_), coarseMapping_(coarseMapping) {
     if (config.has("ramp_up_value")) {
@@ -64,7 +64,7 @@ RampEvent::RampEvent(const eckit::LocalConfiguration& config, plume::data::Model
     }
 }
 
-std::vector<ExtremeEvent::DetectionData> RampEvent::detect(plume::data::ModelData& modelData) {
+std::vector<ExtremeEvent::DetectionData> RampEvent::detect(plume::data::ModelDataView& modelData) {
     std::vector<DetectionData> ee_points;
     const auto& fields = requiredFields();
     std::vector<atlas::array::ArrayView<const FIELD_TYPE_REAL, 2>> arrayViews;
@@ -73,7 +73,7 @@ std::vector<ExtremeEvent::DetectionData> RampEvent::detect(plume::data::ModelDat
     const std::string levelStr = height.has_value() ? std::to_string(*height) : "";
     for (const auto& fieldName : fields) {
         auto field = height.has_value() ? modelData.getParam<atlas::Field>(fieldName, levelStr)
-                                            : modelData.getParam<atlas::Field>(fieldName);
+                                        : modelData.getParam<atlas::Field>(fieldName);
         arrayViews.push_back(atlas::array::make_view<const FIELD_TYPE_REAL, 2>(field));
     }
     auto haloField = height.has_value() ? modelData.getParam<atlas::Field>(fields[0], levelStr)

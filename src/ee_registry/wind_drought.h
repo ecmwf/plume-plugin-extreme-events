@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "eckit/config/LocalConfiguration.h"
-#include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 
 #include "ee_registry.h"
 
@@ -35,7 +35,7 @@ private:
     uint16_t ntimeSteps_;
 
     FIELD_TYPE_REAL windSpeedCutout_;
-    
+
     /// This map stores the number of time steps with low wind speed over each grid point.
     std::vector<unsigned int> windDroughtSteps_;
     const std::vector<int>& coarseMapping_;  ///< Reference to the points to cells mapping to compute spatial averages
@@ -53,7 +53,7 @@ public:
      * @param modelData The model data passed through Plume.
      * @param coarseMapping The mapping to use to coarsen the detection data.
      */
-    WindDrought(const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+    WindDrought(const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
                 const std::vector<int>& coarseMapping);
 
     /**
@@ -67,20 +67,18 @@ public:
      * @return The detection result.
      *         n.b.: single element as the event allows to configure a single time window and wind speed cutout.
      */
-    std::vector<ExtremeEvent::DetectionData> detect(plume::data::ModelData& modelData) override;
+    std::vector<ExtremeEvent::DetectionData> detect(plume::data::ModelDataView& modelData) override;
 
     /**
      * @brief Returns the type/name of the extreme event as used in the configuration.
      */
-    const std::string& type() const override {
-        return type_;
-    }
+    const std::string& type() const override { return type_; }
 
     /// Register the wind drought event into the registry so it can be used in the plugin.
     static struct Registrar {
         Registrar() {
             ExtremeEventRegistry::instance().registerEvent(
-                type_, [](const eckit::LocalConfiguration& config, plume::data::ModelData& modelData,
+                type_, [](const eckit::LocalConfiguration& config, plume::data::ModelDataView& modelData,
                           const std::vector<int>& coarseMapping) {
                     return std::make_unique<WindDrought>(config, modelData, coarseMapping);
                 });

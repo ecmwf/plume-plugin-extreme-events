@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-#include "plume/data/ModelData.h"
+#include "plume/data/ModelDataView.h"
 
 #include "../plugin_types.h"
 
@@ -29,7 +29,7 @@ private:
     /**
      * @struct RequiredModelData
      * @brief A representation of the `required_params` configuration key for validation or retrieval purposes.
-     * 
+     *
      * @note The current implementation of the plugin only supports height levels for wind fields. If this were to
      * evolve due to Plume field derivation capabilities expanding, this struct and the plugin setup will need to be
      * refactored.
@@ -40,7 +40,7 @@ private:
         std::optional<unsigned int> heightLevel_;
     };
 
-    RequiredModelData requiredModelData_;    
+    RequiredModelData requiredModelData_;
 
 public:
     /// Default constructor.
@@ -110,7 +110,7 @@ public:
      *
      * @return The result of the detection.
      */
-    virtual std::vector<DetectionData> detect(plume::data::ModelData& modelData) = 0;
+    virtual std::vector<DetectionData> detect(plume::data::ModelDataView& modelData) = 0;
 
     /// Getters
     const std::vector<std::string>& requiredParams() const { return requiredModelData_.requiredParams_; }
